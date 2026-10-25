@@ -33,7 +33,7 @@ configuration:
         description: Accepts any certificate. Only for a Gitea in your own network that you cannot give a trusted certificate.
       debug_logging:
         name: Debug logging
-        description: Logs every request sent to Gitea. Switch it off again after troubleshooting; the log can contain private data.
+        description: Logs every request sent to Gitea and one line per request to the remote address (method, path, status, User-Agent, never the token). Switch it off again after troubleshooting; the log can contain private data.
 network:
   8080/tcp: Local MCP endpoint (access token)
   8081/tcp: Remote MCP endpoint (OAuth)

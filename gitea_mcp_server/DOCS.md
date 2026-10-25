@@ -34,7 +34,7 @@ Gitea, enter its address in **Gitea address**.
 | `remote_access.gitea_public_url` | empty | Public HTTPS address of your Gitea. Empty when `gitea_url` is already public. |
 | `advanced.ca_certificate` | empty | PEM file in `/ssl` of the certificate authority that signed your Gitea certificate. |
 | `advanced.ignore_certificate_errors` | off | Accept any certificate. Prefer `ca_certificate`. |
-| `advanced.debug_logging` | off | Log every request sent to Gitea. The log can then contain private data. |
+| `advanced.debug_logging` | off | Log every request sent to Gitea, and one line for each request to the remote address (method, path, status, User-Agent, whether a token was sent; never the token itself). The log can then contain private data. |
 
 Invalid values do not stop the app. It keeps running, says what is wrong in the log and on the
 app page, and starts whatever is configured correctly.
@@ -225,8 +225,11 @@ With **Cloudflare**, look at these places for both host names (Gitea and this ap
 Anthropic publishes the [address ranges](https://platform.claude.com/docs/en/api/ip-addresses) of
 its servers if you prefer to allow by address. Other causes of the same symptom are a proxy or
 firewall with geo blocking or rate limits, and a `ROOT_URL` in Gitea that points to an internal
-address (see above). To see whether calls reach the app at all, switch on **Debug logging**, try
-again and look for requests to Gitea in the log.
+address (see above). To see whether calls reach the app at all, switch on **Debug logging** and try again. The log then
+has one line per request to the remote address, for example
+`request: POST /mcp -> 401 … agent="Claude-User" auth=token-sent`. No line means the call never
+arrived; `403` and `421` are answers of the app itself (a request with an `Origin` header, or with
+a different `Host` than `public_url`).
 
 ## Credits
 

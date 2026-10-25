@@ -11,6 +11,8 @@ SSL_DIR="${SSL_DIR:-/ssl}"
 
 GM_LOCAL_PORT=8080
 GM_REMOTE_PORT=8081
+# Where the remote server listens while the request log (nginx) sits in front of it.
+GM_REMOTE_UPSTREAM_PORT=8082
 
 # Where claude.ai and ChatGPT send the user back after signing in to Gitea.
 # ChatGPT also shows a callback of its own in the connector form; that one is added by hand.

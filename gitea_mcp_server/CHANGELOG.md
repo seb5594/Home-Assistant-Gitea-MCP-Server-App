@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-dev7
+
+* Debug logging now also writes one line per request to the remote address: method, path,
+  status, User-Agent, whether a token was sent and whether an `Origin` header came along, never
+  the token. It shows whether claude.ai or ChatGPT reach the app after the sign-in, and what the
+  app answers. A small nginx sits in front of the remote server for this, only while debug
+  logging is on.
+
 ## 1.0.0-dev6
 
 * The Claude-User check now says that it comes from your own network and only claims to be

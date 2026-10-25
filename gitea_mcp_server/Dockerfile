@@ -9,9 +9,12 @@ FROM docker.io/gitea/gitea-mcp-server:${GITEA_MCP_VERSION} AS gitea-mcp
 FROM ${BUILD_FROM}
 
 # Alpine's busybox is built without the httpd applet; busybox-extras brings it (app page).
+# nginx only runs in debug mode, as the request log of the remote address.
 RUN apk add --no-cache \
     # renovate: datasource=repology depName=alpine_3_24/busybox-extras
     busybox-extras=1.37.0-r31 \
+    # renovate: datasource=repology depName=alpine_3_24/nginx
+    nginx=1.30.6-r0 \
     # renovate: datasource=repology depName=alpine_3_24/curl
     curl=8.22.0-r0 \
     # renovate: datasource=repology depName=alpine_3_24/jq
@@ -30,7 +33,7 @@ RUN chmod a+x /usr/lib/gitea-mcp/*.sh /usr/share/gitea-mcp/web/cgi-bin/* \
     && mkdir -p /run/gitea-mcp \
     && ln -s /run/gitea-mcp/status.json /usr/share/gitea-mcp/web/status.json
 
-ARG BUILD_VERSION=1.0.0-dev6
+ARG BUILD_VERSION=1.0.0-dev7
 ARG BUILD_ARCH=amd64
 LABEL io.hass.version="${BUILD_VERSION}" \
     io.hass.type="addon" \

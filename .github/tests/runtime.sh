@@ -8,6 +8,7 @@ shopt -s inherit_errexit
 # the app's libraries; the real gitea-mcp binary is started and asked for its tools over MCP.
 LIB="${LIB_DIR:-/usr/lib/gitea-mcp}"
 RECHECK="${RECHECK_CGI:-/usr/share/gitea-mcp/web/cgi-bin/recheck}"
+NGINX_CONF="${NGINX_CONF:-/etc/gitea-mcp/nginx.conf}"
 read -r -a HTTPD <<<"${HTTPD_COMMAND:-busybox-extras httpd}"
 
 fixture=$(mktemp -d)
@@ -226,12 +227,15 @@ pass 'Gitea checks tell reachable, signed in, rejected and refused apart'
 
 # ---- the servers ----------------------------------------------------------------------------
 
-start_server() { # start_server <port> [VARIABLE=value ...]
-  local port="$1"
+start_server() { # start_server <port> [-flag=value ...] [VARIABLE=value ...]
+  local port="$1" argument flags=() variables=()
   shift
+  for argument in "$@"; do
+    if [[ "$argument" == -* ]]; then flags+=("$argument"); else variables+=("$argument"); fi
+  done
   (
-    declare -x GITEA_HOST=http://127.0.0.1:3000 "$@"
-    exec gitea-mcp -t http -p "$port" >/dev/null 2>&1
+    declare -x GITEA_HOST=http://127.0.0.1:3000 "${variables[@]}"
+    exec gitea-mcp -t http -p "$port" "${flags[@]}" >/dev/null 2>&1
   ) &
   pids+=($!)
   wait_for "http://127.0.0.1:$port/healthz"
@@ -325,6 +329,27 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
 )
 pass 'probes keep answering in JSON when a connection fails'
 pass 'a block of requests that identify as Claude is reported, whether refused or cut off'
+
+# ---- request log of the remote address (debug mode) ----------------------------------------
+
+nginx -t -e stderr -c "$NGINX_CONF" >/dev/null 2>&1 || fail 'the nginx configuration of the request log is invalid'
+mkdir -p /run/gitea-mcp /tmp/gitea-mcp-nginx
+start_server 8082 -b=127.0.0.1
+nginx -e stderr -c "$NGINX_CONF" 2>>"$fixture/nginx.log" &
+pids+=($!)
+wait_for http://127.0.0.1:8081/healthz
+status="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8081/mcp -A Claude-User \
+  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  -H 'Authorization: Bearer s3cr3t-request-log' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}')"
+expect_equal 'request through the request log' 200 "$status"
+for _ in $(seq 1 20); do
+  grep -q 'POST /mcp' "$fixture/nginx.log" && break
+  sleep 0.1
+done
+grep -q 'request: POST /mcp -> 200 .* agent="Claude-User" auth=token-sent' "$fixture/nginx.log" || fail "the request is not logged: $(cat "$fixture/nginx.log")"
+if grep -q 's3cr3t-request-log' "$fixture/nginx.log"; then fail 'the token leaked into the request log'; fi
+pass 'the request log shows method, status, agent and whether a token was sent, never the token'
 
 # ---- app page -------------------------------------------------------------------------------
 

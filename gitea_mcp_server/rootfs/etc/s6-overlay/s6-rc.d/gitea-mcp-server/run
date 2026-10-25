@@ -28,21 +28,38 @@ source "${LIB}/status.sh"
 
 PIDS=()
 
-# launch_server <name> <port> <ignore-tls> [VARIABLE=value ...]
+# launch_server <name> <port> <ignore-tls> [-flag=value ...] [VARIABLE=value ...]
 # Starts one gitea-mcp in the background. Settings go in through the environment, which
 # keeps the access token out of the process list.
 launch_server() {
-  local name="$1" port="$2" insecure="$3"
+  local name="$1" port="$2" insecure="$3" argument
+  local flags=() variables=()
   shift 3
+  for argument in "$@"; do
+    if [[ "$argument" == -* ]]; then
+      flags+=("$argument")
+    else
+      variables+=("$argument")
+    fi
+  done
   (
     export GITEA_READONLY="$GM_READ_ONLY" GITEA_SCOPES="$GM_TOOLSETS" GITEA_DEBUG="$GM_DEBUG"
     export GITEA_INSECURE="$insecure" GITEA_CA_CERT="$GM_CA_CERT"
-    declare -x "$@"
-    exec gitea-mcp -t http -p "$port"
+    declare -x "${variables[@]}"
+    exec gitea-mcp -t http -p "$port" "${flags[@]}"
   ) &
   PIDS+=($!)
   echo "$port" >>"${RUNTIME_DIR}/ports"
   log_info "Started the ${name} MCP server on port ${port}."
+}
+
+# Debug mode only: nginx in front of the remote server writes one log line per request.
+launch_request_log() {
+  mkdir -p /tmp/gitea-mcp-nginx
+  nginx -e stderr -c /etc/gitea-mcp/nginx.conf &
+  PIDS+=($!)
+  echo "$GM_REMOTE_PORT" >>"${RUNTIME_DIR}/ports"
+  log_info "Logging every request to the remote address (method, path, status, agent; never the token)."
 }
 
 start_servers() {
@@ -54,8 +71,16 @@ start_servers() {
       GITEA_HOST="$GM_LOCAL_URL" GITEA_ACCESS_TOKEN="$GM_TOKEN"
   fi
   if [[ -n "$GM_REMOTE_URL" ]]; then
-    launch_server remote "$GM_REMOTE_PORT" "$GM_IGNORE_TLS" \
+    local remote_port="$GM_REMOTE_PORT" remote_flags=()
+    if [[ "$GM_DEBUG" == "true" ]]; then
+      remote_port="$GM_REMOTE_UPSTREAM_PORT"
+      remote_flags=(-b=127.0.0.1)
+    fi
+    launch_server remote "$remote_port" "$GM_IGNORE_TLS" "${remote_flags[@]}" \
       GITEA_HOST="$GM_REMOTE_GITEA_URL" GITEA_MCP_OAUTH=true GITEA_MCP_PUBLIC_URL="$GM_REMOTE_URL"
+    if [[ "$GM_DEBUG" == "true" ]]; then
+      launch_request_log
+    fi
   fi
 }
 
@@ -76,7 +101,7 @@ log_endpoints() {
   fi
   log_info "Access: ${access}, ${toolsets}."
   if [[ "$GM_DEBUG" == "true" ]]; then
-    log_warning "Debug logging prints every request sent to Gitea. Switch it off after troubleshooting."
+    log_warning "Debug logging prints every request sent to Gitea and, for the remote address, one line per request. Switch it off after troubleshooting."
   fi
   if [[ -n "$GM_LOCAL_URL" ]]; then
     log_info "Home Assistant: add the 'Model Context Protocol' integration with the address http://${GM_APP_HOSTNAME}:${GM_LOCAL_PORT}/mcp"
