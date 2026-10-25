@@ -289,17 +289,28 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
 
 (
   settings
-  # A bot protection that refuses Claude after the sign-in worked, as Cloudflare does for Claude-User.
-  # shellcheck disable=SC2329  # replaces the library function
+  # Bot protection that stops only requests introducing themselves as Claude-User, as Cloudflare
+  # does: first with a web page (403), then by cutting the connection off (curl error 92).
+  # The library reads these variables and calls this function; shellcheck cannot see that.
+  # shellcheck disable=SC2034,SC2317,SC2329
   http_get() {
-    # shellcheck disable=SC2034,SC2317  # read by the library; older shellchecks call this unreachable
-    CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
+    CURL_RC=0 HTTP_CODE=401 HTTP_BODY='authorization required' HTTP_HEADERS=$'HTTP/2 401\r\nwww-authenticate: Bearer resource_metadata="x"'
+    if [[ "${HTTP_USER_AGENT:-}" == "Claude-User" && "$BLOCK_MODE" == "page" ]]; then
+      CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
+    elif [[ "${HTTP_USER_AGENT:-}" == "Claude-User" && "$BLOCK_MODE" == "reset" ]]; then
+      CURL_RC=92 HTTP_CODE=000 HTTP_BODY="" HTTP_HEADERS=""
+    fi
   }
-  result="$(probe_agent_access https://mcp.example.com false "")"
-  expect_equal 'refused as Claude-User' false "$(jq -r .ok <<<"$result")"
-  [[ "$(jq -r .error <<<"$result")" == *Claude-User* ]] || fail 'the Claude-User refusal is not explained'
+  for BLOCK_MODE in page reset; do
+    result="$(BLOCK_MODE=$BLOCK_MODE probe_agent_access https://mcp.example.com false "")"
+    expect_equal "Claude-User refused ($BLOCK_MODE)" false "$(jq -r .ok <<<"$result")"
+    [[ "$(jq -r .error <<<"$result")" == *'identify as Claude'*'ordinary request reaches the app'* ]] \
+      || fail "the Claude-User refusal is not explained ($BLOCK_MODE): $(jq -r .error <<<"$result")"
+  done
+  result="$(BLOCK_MODE=none probe_agent_access https://mcp.example.com false "")"
+  expect_equal 'nothing in the way' true "$(jq -r .ok <<<"$result")"
 )
-pass 'a refusal of requests that identify as Claude is reported'
+pass 'a block of requests that identify as Claude is reported, whether refused or cut off'
 
 # ---- app page -------------------------------------------------------------------------------
 

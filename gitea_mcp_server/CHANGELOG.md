@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-dev4
+
+* The Claude-User check also recognises a connection that is cut off instead of answered (the
+  way Cloudflare drops these requests) and compares it with an ordinary request, so the message
+  says plainly that only Claude's name is blocked.
+
 ## 1.0.0-dev3
 
 * New check for remote access: the public address is called the way Claude's servers call it
