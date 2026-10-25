@@ -33,7 +33,7 @@ configuration:
         description: Akzeptiert jedes Zertifikat. Nur für ein Gitea im eigenen Netz, dem du kein vertrauenswürdiges Zertifikat geben kannst.
       debug_logging:
         name: Debug-Protokoll
-        description: Protokolliert jede Anfrage an Gitea. Nach der Fehlersuche wieder ausschalten; das Protokoll kann private Daten enthalten.
+        description: Protokolliert jede Anfrage an Gitea und eine Zeile pro Anfrage an die Fernzugriffsadresse (Methode, Pfad, Status, User-Agent, nie den Token). Nach der Fehlersuche wieder ausschalten; das Protokoll kann private Daten enthalten.
 network:
   8080/tcp: Lokaler MCP-Endpunkt (Zugriffstoken)
   8081/tcp: MCP-Endpunkt für den Fernzugriff (OAuth)
