@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-dev14
+
+* Dependencies: update alpine base and packages (base image 3.24-2026.10.1, curl 8.23.0-r0).
+
 ## 1.0.0-dev13
 
 * ChatGPT is tried with its documented name ChatGPT-User. The tests for AI services are hints now

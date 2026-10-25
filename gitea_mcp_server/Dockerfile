@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/base:3.24-2026.10.0
+ARG BUILD_FROM=ghcr.io/home-assistant/base:3.24-2026.10.1
 
 # The official image is distroless: it holds nothing but the static Go binary. That binary is
 # copied into the Home Assistant base image, which brings bashio and s6-overlay.
@@ -16,7 +16,7 @@ RUN apk add --no-cache \
     # renovate: datasource=repology depName=alpine_3_24/nginx
     nginx=1.30.6-r0 \
     # renovate: datasource=repology depName=alpine_3_24/curl
-    curl=8.22.0-r0 \
+    curl=8.23.0-r0 \
     # renovate: datasource=repology depName=alpine_3_24/jq
     jq=1.8.2-r0
 
@@ -33,7 +33,7 @@ RUN chmod a+x /usr/lib/gitea-mcp/*.sh /usr/share/gitea-mcp/web/cgi-bin/* \
     && mkdir -p /run/gitea-mcp \
     && ln -s /run/gitea-mcp/status.json /usr/share/gitea-mcp/web/status.json
 
-ARG BUILD_VERSION=1.0.0-dev13
+ARG BUILD_VERSION=1.0.0-dev14
 ARG BUILD_ARCH=amd64
 RUN echo "${BUILD_VERSION}" >/etc/gitea-mcp/version
 LABEL io.hass.version="${BUILD_VERSION}" \
