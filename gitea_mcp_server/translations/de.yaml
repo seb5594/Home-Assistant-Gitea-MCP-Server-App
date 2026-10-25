@@ -1,0 +1,39 @@
+configuration:
+  gitea_url:
+    name: Gitea-Adresse
+    description: Leer lassen, um die neben dieser App installierte Gitea-App zu nutzen. Sonst die Adresse deines Gitea eintragen, zum Beispiel http://homeassistant.local:3000 oder https://git.example.com.
+  access_token:
+    name: Zugriffstoken
+    description: Persönlicher Zugriffstoken deines Gitea-Kontos (Gitea > Einstellungen > Anwendungen > Neuen Token erzeugen). Home Assistant und andere lokale Clients arbeiten mit den Rechten dieses Tokens. Die App-Seite zeigt, ob er funktioniert.
+  read_only:
+    name: Nur lesen
+    description: An (empfohlen) blendet alle Werkzeuge aus, die etwas anlegen oder ändern. Nur ausschalten, wenn der Token auch schreiben darf.
+  toolsets:
+    name: Werkzeuggruppen
+    description: Welche Gruppen von Werkzeugen angeboten werden. Leer lassen für alle. Eine kurze Auswahl hält die Werkzeugliste klein, das hilft Sprachassistenten und spart Token.
+  remote_access:
+    name: Fernzugriff für claude.ai und ChatGPT
+    description: Optional. Beide Dienste verbinden sich über das Internet und melden sich per OAuth bei Gitea an; die App-Seite führt dich Schritt für Schritt durch die Einrichtung. Leer lassen, damit die App lokal bleibt.
+    fields:
+      public_url:
+        name: Öffentliche MCP-Adresse
+        description: HTTPS-Adresse, unter der diese App aus dem Internet erreichbar ist, ohne Pfad, zum Beispiel https://mcp.example.com. Richte Tunnel oder Reverse Proxy auf Port 8081 dieser App aus.
+      gitea_public_url:
+        name: Öffentliche Gitea-Adresse
+        description: HTTPS-Adresse deines Gitea, wie sie aus dem Internet aussieht, zum Beispiel https://git.example.com. Leer lassen, wenn die Gitea-Adresse oben bereits öffentlich ist.
+  advanced:
+    name: Erweitert
+    description: Nur für selbst signierte Zertifikate und die Fehlersuche nötig.
+    fields:
+      ca_certificate:
+        name: CA-Zertifikatsdatei
+        description: Name einer PEM-Datei im Ordner /ssl, die das Zertifikat deines Gitea signiert hat, zum Beispiel my-ca.pem. Der saubere Weg für HTTPS mit eigener Zertifizierungsstelle.
+      ignore_certificate_errors:
+        name: Zertifikatsfehler ignorieren
+        description: Akzeptiert jedes Zertifikat. Nur für ein Gitea im eigenen Netz, dem du kein vertrauenswürdiges Zertifikat geben kannst.
+      debug_logging:
+        name: Debug-Protokoll
+        description: Protokolliert jede Anfrage an Gitea. Nach der Fehlersuche wieder ausschalten; das Protokoll kann private Daten enthalten.
+network:
+  8080/tcp: Lokaler MCP-Endpunkt (Zugriffstoken)
+  8081/tcp: MCP-Endpunkt für den Fernzugriff (OAuth)
