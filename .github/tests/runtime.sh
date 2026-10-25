@@ -259,6 +259,7 @@ expect_equal 'unauthenticated MCP request' 401 "$status"
   expect_equal 'public MCP check' true "$(jq -r .mcp.ok <<<"$result")"
   expect_equal 'public Gitea check' true "$(jq -r .gitea.ok <<<"$result")"
   expect_equal 'Gitea sign-in check' true "$(jq -r .oauth.ok <<<"$result")"
+  expect_equal 'requests as Claude-User' true "$(jq -r .agent.ok <<<"$result")"
   result="$(probe_remote http://127.0.0.1:18183 http://127.0.0.1:3000 false "")"
   expect_equal 'wrong target' false "$(jq -r .mcp.ok <<<"$result")"
 )
@@ -285,6 +286,20 @@ pass 'the remote server asks for OAuth and the remote checks recognise it'
   [[ "$(describe_block)" == Cloudflare* ]] || fail 'Cloudflare is not named'
 )
 pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirement of Gitea itself'
+
+(
+  settings
+  # A bot protection that refuses Claude after the sign-in worked, as Cloudflare does for Claude-User.
+  # shellcheck disable=SC2329  # replaces the library function
+  http_get() {
+    # shellcheck disable=SC2034
+    CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
+  }
+  result="$(probe_agent_access https://mcp.example.com false "")"
+  expect_equal 'refused as Claude-User' false "$(jq -r .ok <<<"$result")"
+  [[ "$(jq -r .error <<<"$result")" == *Claude-User* ]] || fail 'the Claude-User refusal is not explained'
+)
+pass 'a refusal of requests that identify as Claude is reported'
 
 # ---- app page -------------------------------------------------------------------------------
 

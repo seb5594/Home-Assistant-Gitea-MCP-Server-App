@@ -38,6 +38,7 @@ const TEXT = {
     remoteOff: 'Not set up. Both services reach your MCP server over the internet and sign in to Gitea with OAuth. To enable it, enter the public HTTPS addresses under “Remote access” in the app configuration and restart the app. The documentation shows how to publish the app with a tunnel.',
     openConfig: 'Open app configuration',
     checkMcp: 'The public MCP address answers',
+    checkAgent: 'Requests from Claude’s servers reach this app',
     checkGitea: 'The public Gitea address answers',
     checkOauth: 'Gitea’s sign-in is reachable from the internet',
     checkHint: 'These checks run from inside your network. A failed check can still work from outside when your router does not loop requests back.',
@@ -86,6 +87,7 @@ const TEXT = {
     remoteOff: 'Nicht eingerichtet. Beide Dienste erreichen deinen MCP-Server über das Internet und melden sich per OAuth bei Gitea an. Zum Aktivieren trägst du die öffentlichen HTTPS-Adressen unter „Fernzugriff“ in der App-Konfiguration ein und startest die App neu. Die Dokumentation zeigt, wie du die App mit einem Tunnel veröffentlichst.',
     openConfig: 'App-Konfiguration öffnen',
     checkMcp: 'Die öffentliche MCP-Adresse antwortet',
+    checkAgent: 'Anfragen von Claudes Servern erreichen diese App',
     checkGitea: 'Die öffentliche Gitea-Adresse antwortet',
     checkOauth: 'Die Anmeldung von Gitea ist aus dem Internet erreichbar',
     checkHint: 'Diese Prüfungen laufen innerhalb deines Netzwerks. Eine fehlgeschlagene Prüfung kann von außen trotzdem funktionieren, wenn dein Router Anfragen nicht zurückleitet.',
@@ -210,6 +212,7 @@ function renderRemote(status) {
   card.replaceChildren(
     el('h2', {}, t('remote')),
     checks && row(checks.mcp.ok ? 'ok' : 'bad', t('checkMcp'), checks.mcp.error),
+    checks && row(checks.agent.ok ? 'ok' : 'bad', t('checkAgent'), checks.agent.error),
     checks && row(checks.gitea.ok ? 'ok' : 'bad', t('checkGitea'), checks.gitea.error || checks.gitea.note),
     checks && row(checks.oauth.ok ? 'ok' : 'bad', t('checkOauth'), checks.oauth.error),
     el('p', { className: 'muted' }, t('checkHint')),

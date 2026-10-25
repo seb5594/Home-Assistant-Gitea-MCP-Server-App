@@ -5,8 +5,8 @@
 
 # http_get <url> <insecure> <ca-file> [token]
 # Sets HTTP_CODE (000 when nothing answered), HTTP_BODY, HTTP_HEADERS and CURL_RC. HTTP_METHOD
-# (default GET) picks the method. The token travels on stdin so that it never appears in the
-# process list.
+# (default GET) picks the method, HTTP_USER_AGENT the way the request introduces itself. The
+# token travels on stdin so that it never appears in the process list.
 http_get() {
   local url="$1" insecure="$2" ca_file="$3" token="${4:-}"
   local body_file header_file args=(-sS --max-time 6 -K - -X "${HTTP_METHOD:-GET}")
@@ -18,6 +18,9 @@ http_get() {
   fi
   if [[ -n "$ca_file" ]]; then
     args+=(--cacert "$ca_file")
+  fi
+  if [[ -n "${HTTP_USER_AGENT:-}" ]]; then
+    args+=(-A "$HTTP_USER_AGENT")
   fi
   HTTP_CODE="$(
     if [[ -n "$token" ]]; then
@@ -106,9 +109,32 @@ probe_gitea() {
      token: {state: $state, login: $login, error: $token_error}}'
 }
 
+# probe_agent_access <mcp-public-url> <insecure> <ca-file>
+# Claude signs in with one service and then calls the MCP address with another that introduces
+# itself as "Claude-User". Bot protection in front of the app often refuses exactly that one
+# after the sign-in worked, so the request is made the same way. Without a token the app
+# answers 401 with a WWW-Authenticate header, which proves the request reached it.
+# {"ok", "error"}
+probe_agent_access() {
+  local ok=false error=""
+
+  HTTP_METHOD=POST HTTP_USER_AGENT="Claude-User" http_get "${1}/mcp" "$2" "$3"
+  if [[ "$HTTP_CODE" == "401" ]] && grep -qi '^www-authenticate: *bearer' <<<"$HTTP_HEADERS"; then
+    ok=true
+  elif [[ "$HTTP_CODE" == "000" ]]; then
+    error="The public address does not answer: $(describe_failure)."
+  elif is_blocked || [[ "$HTTP_CODE" == "403" ]]; then
+    error="$(describe_block) This happens for requests that identify as Claude (User-Agent Claude-User), while a normal request gets through."
+  else
+    error="Requests from Claude get HTTP ${HTTP_CODE} instead of the sign-in challenge of this app."
+  fi
+
+  jq -nc --argjson ok "$ok" --arg error "$error" '{ok: $ok, error: $error}'
+}
+
 # probe_remote <mcp-public-url> <gitea-public-url> <insecure> <ca-file>
 # Looks at the public addresses the way Claude and ChatGPT will:
-# {"mcp": {"ok", "error"}, "gitea": {"ok", "error", "note"}, "oauth": {"ok", "error"}}
+# {"mcp": {"ok", "error"}, "agent": {"ok", "error"}, "gitea": {"ok", "error", "note"}, "oauth": {"ok", "error"}}
 probe_remote() {
   local mcp_url="$1" gitea_url="$2" insecure="$3" ca_file="$4"
   local mcp_ok=false mcp_error="" gitea_ok=false gitea_error="" gitea_note=""
@@ -167,9 +193,10 @@ probe_remote() {
   fi
 
   jq -nc --argjson mcp_ok "$mcp_ok" --arg mcp_error "$mcp_error" \
+    --argjson agent "$(probe_agent_access "$mcp_url" "$insecure" "$ca_file")" \
     --argjson gitea_ok "$gitea_ok" --arg gitea_error "$gitea_error" --arg gitea_note "$gitea_note" \
     --argjson oauth_ok "$oauth_ok" --arg oauth_error "$oauth_error" '
-    {mcp: {ok: $mcp_ok, error: $mcp_error},
+    {mcp: {ok: $mcp_ok, error: $mcp_error}, agent: $agent,
      gitea: {ok: $gitea_ok, error: $gitea_error, note: $gitea_note},
      oauth: {ok: $oauth_ok, error: $oauth_error}}'
 }
