@@ -1,7 +1,7 @@
 configuration:
   gitea_url:
     name: Gitea-Adresse
-    description: Leer lassen, um die neben dieser App installierte Gitea-App zu nutzen. Sonst die Adresse deines Gitea eintragen, zum Beispiel http://homeassistant.local:3000 oder https://git.example.com.
+    description: Adresse deines Gitea. Standard ist die Gitea-App von alexbelgium. Für eine andere App http://<Hostname>:3000, für ein Gitea an anderer Stelle zum Beispiel https://git.example.com.
   access_token:
     name: Zugriffstoken
     description: Persönlicher Zugriffstoken deines Gitea-Kontos (Gitea > Einstellungen > Anwendungen > Neuen Token erzeugen). Home Assistant und andere lokale Clients arbeiten mit den Rechten dieses Tokens. Die App-Seite zeigt, ob er funktioniert.
@@ -12,8 +12,8 @@ configuration:
     name: Werkzeuggruppen
     description: Welche Gruppen von Werkzeugen angeboten werden. Leer lassen für alle. Eine kurze Auswahl hält die Werkzeugliste klein, das hilft Sprachassistenten und spart Token.
   remote_access:
-    name: Fernzugriff für claude.ai und ChatGPT
-    description: Optional. Beide Dienste verbinden sich über das Internet und melden sich per OAuth bei Gitea an; die App-Seite führt dich Schritt für Schritt durch die Einrichtung. Leer lassen, damit die App lokal bleibt.
+    name: Fernzugriff für KI-Dienste
+    description: Optional. Online-Assistenten wie claude.ai, ChatGPT und Claude Code verbinden sich über das Internet und melden sich per OAuth bei Gitea an; die App-Seite führt dich Schritt für Schritt durch die Einrichtung. Leer lassen, damit die App lokal bleibt.
     fields:
       public_url:
         name: Öffentliche MCP-Adresse
@@ -25,9 +25,6 @@ configuration:
     name: Erweitert
     description: Nur für selbst signierte Zertifikate und die Fehlersuche nötig.
     fields:
-      ca_certificate:
-        name: CA-Zertifikatsdatei
-        description: Name einer PEM-Datei im Ordner /ssl, die das Zertifikat deines Gitea signiert hat, zum Beispiel my-ca.pem. Der saubere Weg für HTTPS mit eigener Zertifizierungsstelle.
       ignore_certificate_errors:
         name: Zertifikatsfehler ignorieren
         description: Akzeptiert jedes Zertifikat. Nur für ein Gitea im eigenen Netz, dem du kein vertrauenswürdiges Zertifikat geben kannst.

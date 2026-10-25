@@ -11,45 +11,137 @@ const TEXT = {
     checkedAt: 'Last checked {0}',
     preRelease: 'Pre-release {0}',
     problems: 'Needs attention',
-    connection: 'Gitea connection',
-    noGitea: 'No Gitea configured',
-    noGiteaDetail: 'Install the Gitea app, or enter the address of your Gitea in the app configuration.',
+    openConfig: 'Open app configuration',
+    ready: 'Ready',
+    needsRemote: 'Needs remote access',
+    checkFailed: 'See the checks',
+    needsGitea: 'Needs Gitea',
+    setUp: 'Set up',
+    mcpAddress: 'MCP address',
+
+    tab_overview: 'Overview',
+    tab_assist: 'Home Assistant',
+    tab_remote: 'Remote access',
+    tab_claude: 'claude.ai',
+    tab_chatgpt: 'ChatGPT',
+    tab_code: 'Claude Code',
+    tab_other: 'Other agents',
+
+    overviewIntro: 'This app lets AI assistants work with your own Gitea: search repositories, read files, and look at or write issues and pull requests. It speaks the Model Context Protocol (MCP), which many assistants understand. You decide which ones to connect; nothing below is required.',
+    connection: 'Connection',
+    noGiteaDetail: 'Enter the address of your Gitea in the app configuration.',
     giteaOk: 'Gitea {0} is reachable',
-    giteaApp: '{0} (found the Gitea app automatically)',
+    giteaDefault: '{0} (the Gitea app by alexbelgium, the default)',
     giteaUrl: '{0} (address from the app configuration)',
     giteaBad: 'Gitea does not answer',
     tokenOk: 'Signed in as {0}',
-    tokenOkDetail: 'The access token works.',
+    tokenOkDetail: 'Every assistant that uses the local address works with the permissions of this access token.',
     tokenNone: 'No access token yet',
-    tokenNoneDetail: 'Only public data can be read. Create a token in Gitea under Settings → Applications and enter it as “Access token” in the app configuration.',
+    tokenNoneDetail: 'Without a token only public data can be read. Create one in Gitea under Settings → Applications and enter it as “Access token” in the app configuration. Assistants that sign in themselves (claude.ai, ChatGPT, Claude Code) do not need it.',
     tokenBad: 'The access token does not work',
     readOnly: 'Read-only',
-    readOnlyDetail: 'Tools that change something are switched off.',
+    readOnlyDetail: 'Tools that change something are switched off, for every assistant.',
     readWrite: 'Read and write',
-    readWriteDetail: 'Tools can create and change issues, files and more. Give the token only the permissions you want to allow.',
-    allToolsets: 'All toolsets',
-    someToolsets: 'Toolsets: {0}',
-    toolsetsDetail: 'A short list keeps the tool list small, which helps voice assistants.',
-    homeAssistant: 'Home Assistant',
-    haIntro: 'Add the “Model Context Protocol” integration and enter this address. Then select it as tool provider in your Assist conversation agent.',
-    mcpAddress: 'MCP address',
+    readWriteDetail: 'Tools can create and change issues, files and more. For the local address the access token decides what is allowed; for sign-in clients it is the Gitea account of whoever signs in.',
+    allToolsets: 'All tool groups',
+    someToolsets: 'Tool groups: {0}',
+    toolsetsDetail: 'A short list keeps the tool list small, which helps voice assistants and saves tokens.',
+    chooseTitle: 'What do you want to connect?',
+    chooseIntro: 'Pick the assistants you use. Each one has its own tab with step-by-step instructions.',
+    tileAssist: 'Use Gitea in your voice assistant and chats inside Home Assistant.',
+    tileClaude: 'Claude in the browser and the apps, through a custom connector.',
+    tileChatgpt: 'ChatGPT with developer mode, through a custom connector.',
+    tileCode: 'The Claude Code command line, with your own sign-in.',
+    tileOther: 'Cursor, OpenClaw and every other tool that understands MCP.',
+    fitsTitle: 'How it fits together',
+    fitsLocal: 'Local address: Home Assistant and other clients in your network use the access token from the app configuration. Nothing leaves your network.',
+    fitsRemote: 'Remote address: AI services on the internet reach the app through a tunnel or reverse proxy that you set up, and sign in to your Gitea with OAuth, each person with their own account. Needs the “Remote access” tab.',
+
+    assistTitle: 'Home Assistant and Assist',
+    assistIntro: 'Home Assistant can use this app as a tool provider for its conversation agents (Assist). Then you can ask “which issues are open in my smart home repository?” by voice or chat. Home Assistant is the MCP client here.',
+    assistStep1: 'Add the integration',
+    assistStep1Text: 'Add the “Model Context Protocol” integration and enter this address. It is the local address, which works with the access token of the app.',
     addIntegration: 'Add integration',
-    remote: 'claude.ai and ChatGPT',
-    remoteOff: 'Not set up. Both services reach your MCP server over the internet and sign in to Gitea with OAuth. To enable it, enter the public HTTPS addresses under “Remote access” in the app configuration and restart the app. The documentation shows how to publish the app with a tunnel.',
-    openConfig: 'Open app configuration',
+    assistStep2: 'Give your assistant the tools',
+    assistStep2Text: 'Open Settings → Voice assistants, select your assistant and open the settings of its conversation agent. Under “Control Home Assistant” enable the entry named after the integration (usually “Gitea MCP Server” or the name you gave it). The conversation agent must support tools, for example the OpenAI, Anthropic, Google or Ollama integrations. The built-in Assist agent without a language model does not.',
+    assistStep3: 'Try it',
+    assistStep3Text: 'Ask in a chat with the assistant: “List the open issues of owner/repository.” or “Show the latest commits of the main branch.” If nothing happens, check that Gitea is reachable on the Overview tab.',
+    assistTips: 'Tips',
+    assistTip1: 'Keep the app read-only until you trust the setup. A voice assistant should rarely be allowed to change repositories.',
+    assistTip2: 'Voice assistants work better with fewer tools. Choose only the tool groups you need under “Tool groups” in the app configuration, for example issue, pull_request and repository.',
+    assistTip3: 'The access token decides everything the assistant can see and do. Create a token with only the permissions you want, ideally for a separate Gitea account.',
+    assistTip4: 'Which Home Assistant entities an assistant may control is a different setting (Settings → Voice assistants → Expose). It does not affect these tools.',
+    ownServerTitle: 'Home Assistant’s own MCP server',
+    ownServerText: 'Home Assistant has an MCP Server integration too. It shows the tools of Home Assistant’s LLM APIs to MCP clients, and the Model Context Protocol integration from step 1 registers this app as one such API. So an assistant could use Gitea through Home Assistant’s address (/api/mcp) instead of through this app’s. The price: that address needs Home Assistant itself to be reachable from the internet, the sign-in is a Home Assistant account (an administrator by default) and all Gitea actions run with the one access token of this app, not with the account of whoever asks. This app’s own remote address keeps Home Assistant out of it and uses the Gitea account of each person. This path is based on Home Assistant’s documentation; it has not been tested with this app.',
+
+    remoteTitle: 'Remote access for AI services',
+    remoteOffIntro: 'claude.ai, ChatGPT and other online assistants cannot reach your home network. For them this app offers a second, public address. They sign in to Gitea with OAuth (each person with their own account) and need no access token.',
+    remoteOffNeeds: 'What you need',
+    remoteNeed1: 'A public HTTPS address that leads to port 8081 of this app, for example through a Cloudflare tunnel, a reverse proxy or Home Assistant’s remote access.',
+    remoteNeed2: 'A Gitea whose sign-in is reachable from the internet over HTTPS (set ROOT_URL in Gitea to its public address).',
+    remoteNeed3: 'Both addresses entered under “Remote access” in the app configuration. Restart the app afterwards.',
+    remoteSecurity: 'This opens your Gitea sign-in to the internet. Use HTTPS only, keep Gitea up to date and think about who may register.',
+    remoteOn: 'The public address is set up. The checks below look at it from inside your network.',
+    checksTitle: 'Checks',
     checkMcp: 'The public MCP address answers',
-    checkAgent: 'Requests from Claude’s servers reach this app',
+    checkAgent: 'AI services reach this app',
     checkGitea: 'The public Gitea address answers',
     checkOauth: 'Gitea’s sign-in is reachable from the internet',
-    checkHint: 'These checks run from inside your network. A failed check can still work from outside when your router does not loop requests back.',
-    step1: '1. Create an OAuth application in Gitea',
-    step1Text: 'Open {0}, create an OAuth2 application with the values below and leave “Confidential Client” unchecked. Then copy its client ID.',
+    checkHint: 'These checks run from inside your network. A failed check can still work from outside when your router does not loop requests back. The AI service check sends requests that only claim to come from the services: bot protection in front of the app often treats those like the real ones, but that is a hint and not proof.',
+    agentsTitle: 'AI services, one by one',
+    agentOk: '{0} gets through',
+    oauthTitle: 'The OAuth application in Gitea',
+    oauthIntro: 'All assistants share one OAuth application in your Gitea. Create it once and copy its client ID; every assistant tab asks for it.',
+    oauthStep1: 'Create the application',
+    oauthStep1Text: 'Open {0}, create an OAuth2 application with the values below and leave “Confidential Client” unchecked. Copy its client ID.',
     appName: 'Application name',
     redirectUris: 'Redirect URIs (one per line)',
-    step2: '2. Connect claude.ai',
-    step2Text: 'In claude.ai open Settings → Connectors → Add custom connector. Paste the address, open the advanced settings and enter the client ID.',
-    step3: '3. Connect ChatGPT',
-    step3Text: 'With developer mode switched on, create a connector with OAuth, the same address and the client ID. ChatGPT shows a callback address of its own: add it as one more redirect URI to the Gitea application.',
+    redirectHint: 'These cover claude.ai and Claude Code. ChatGPT shows a callback address of its own for every connector, and other tools have theirs: add each one as one more line when you set the tool up.',
+    needRemoteFirst: 'Set up the remote address first (tab “Remote access”). The steps below show the addresses to enter.',
+
+    claudeTitle: 'claude.ai',
+    claudeIntro: 'Adds this app as a custom connector. Works on claude.ai in the browser and in the Claude apps for the account that adds it.',
+    claudeStep1: 'Create the OAuth application',
+    claudeStep1Text: 'Once for all assistants, see the tab “Remote access”. You need its client ID.',
+    claudeStep2: 'Add the connector',
+    claudeStep2Text: 'In claude.ai open Settings → Connectors → Add custom connector. Enter a name and paste the address.',
+    claudeStep3: 'Enter the client ID',
+    claudeStep3Text: 'Open the advanced settings of the connector form and enter the client ID. Leave the secret empty.',
+    claudeStep4: 'Sign in',
+    claudeStep4Text: 'Click “Connect”, sign in to your Gitea and allow access. Afterwards the tools appear in your chats; switch them on per chat with the “+” menu.',
+    claudeTrouble: 'If the sign-in works but the connection fails afterwards, the usual cause is bot protection in front of the app that refuses the requests Claude’s servers send. The check “AI services reach this app” shows it.',
+
+    chatgptTitle: 'ChatGPT',
+    chatgptIntro: 'Adds this app as a custom connector. Needs developer mode, which ChatGPT offers on paid plans.',
+    chatgptStep1: 'Switch on developer mode',
+    chatgptStep1Text: 'In the ChatGPT settings open Connectors → Advanced and switch on developer mode.',
+    chatgptStep2: 'Start a new connector',
+    chatgptStep2Text: 'Create a new connector, enter a name, paste the address and choose OAuth as authentication.',
+    chatgptStep3: 'Add ChatGPT’s callback address to Gitea',
+    chatgptStep3Text: 'ChatGPT now shows a callback address of its own, similar to https://chatgpt.com/connector/oauth/ followed by a random value. It is different for every connector and Gitea only accepts addresses it knows. Open your OAuth application in Gitea and add the address as one more redirect URI.',
+    chatgptStep4: 'Enter the client ID and create the connector',
+    chatgptStep4Text: 'Enter the client ID of the OAuth application, create the connector and sign in to Gitea when asked. Then switch the connector on in a chat.',
+    chatgptTrouble: 'An error about a redirect URI that is not registered means step 3 is missing or the address differs in one character.',
+
+    codeTitle: 'Claude Code',
+    codeIntro: 'Adds this app to the Claude Code command line. Claude Code signs in through a small web server on your own computer.',
+    codeStep1: 'Create the OAuth application',
+    codeStep1Text: 'Once for all assistants, see the tab “Remote access”. Its redirect URIs already contain the address for Claude Code. Gitea only accepts this return address with its exact port, so the port is fixed.',
+    codeStep2: 'Add the server',
+    codeStep2Text: 'Run this in a terminal and replace the client ID.',
+    claudeCodeCommand: 'Command for your terminal',
+    codeStep3: 'Sign in',
+    codeStep3Text: 'Start Claude Code, type /mcp, choose the server and sign in to Gitea in the browser window that opens.',
+
+    otherTitle: 'Other agents',
+    otherIntro: 'Everything that understands MCP over HTTP can use this app, for example Cursor, OpenClaw, Codex or your own scripts. There are two ways.',
+    otherLocal: 'On your network, with the access token',
+    otherLocalText: 'Open port 8080 of this app under Network in the app configuration, then point the tool at this address. The tool acts with the permissions of the access token from the app configuration, and anyone who can reach the port does as well, so use it only in a network you trust.',
+    otherLocalConfig: 'Example for tools with an “mcpServers” configuration',
+    otherRemote: 'Over the internet, with sign-in',
+    otherRemoteText: 'Set up the remote address (tab “Remote access”). The tool must support OAuth with a client ID that you enter yourself, because Gitea does not offer automatic registration. Add the callback address the tool shows as one more redirect URI to the OAuth application.',
+    otherNote: 'Settings and menus differ between tools. If one does not work, the “Checks” on the Remote access tab show whether the app is reachable for it, and the app log (switch on debug logging) shows which requests arrive.',
+
     reason_host_unknown: 'the host name is unknown',
     reason_refused: 'the connection was refused (is the app started?)',
     reason_timeout: 'the request timed out',
@@ -60,29 +152,25 @@ const TEXT = {
     how_cut_off: 'cut off ({reason})',
     how_refused: 'refused with HTTP {http}',
     m_no_answer: 'The address does not answer: {reason}.',
-    m_blocked: '{who} refuses the request (HTTP {http}). Claude and ChatGPT would be refused the same way: check bot and AI-crawler protection, firewall rules and access policies for this host.',
+    m_blocked: '{who} refuses the request (HTTP {http}). AI services would be refused the same way: check bot and AI-crawler protection, firewall rules and access policies for this host.',
     m_wrong_target: 'The public address answers, but not with this app (HTTP {http}). Point the tunnel or proxy at port {port} of this app.',
     m_http_status: 'The public Gitea address answers with HTTP {http}.',
     m_login_required: 'Gitea requires a login for everything; add an access token.',
-    m_login_required_note: 'Gitea asks for a sign-in before it shows anything. That is fine for the sign-in of Claude and ChatGPT.',
+    m_login_required_note: 'Gitea asks for a sign-in before it shows anything. That is fine for the sign-in of the AI services.',
     m_not_gitea: '{url} answers, but it does not look like Gitea (HTTP {http}). Check the address.',
     m_token_rejected: 'Gitea does not accept this access token.',
     m_token_http: 'The token could not be checked (HTTP {http}).',
     m_token_unreachable: 'The token could not be checked because Gitea is not reachable.',
-    m_agent_blocked: 'Requests that identify as Claude (User-Agent Claude-User) are {how}, while an ordinary request reaches the app. Bot protection in front of it does this, for example Cloudflare’s blocking of AI crawlers. This test comes from your own network, so it is a hint and not proof: a service may treat a request that only claims to be Claude differently from Claude’s real servers. The security log of your firewall shows what the real requests (from 160.79.104.0/21) got.',
-    m_agent_http: 'Requests from Claude get HTTP {http} instead of the sign-in challenge of this app.',
-    m_root_url: 'Gitea announces its sign-in at {endpoint}. Set ROOT_URL in Gitea to {public}/ so that Claude and ChatGPT are sent to the public address.',
+    m_agent_blocked: 'Requests that identify as {name} (User-Agent {agent}) are {how}, while an ordinary request reaches the app. Bot protection in front of it does this, for example Cloudflare’s blocking of AI crawlers. The security log of your firewall shows what the real requests got.',
+    m_agents_blocked: '{count} AI service(s) are refused or cut off while an ordinary request reaches the app. See the list below.',
+    m_agent_http: 'The MCP address does not answer with the sign-in challenge of this app (HTTP {http}).',
+    m_root_url: 'Gitea announces its sign-in at {endpoint}. Set ROOT_URL in Gitea to {public}/ so that the AI services are sent to the public address.',
     m_oauth_http: 'The sign-in address of Gitea answers with HTTP {http}.',
     m_oauth_no_discovery: 'Gitea does not publish its sign-in addresses (HTTP {http}).',
-    m_no_gitea: 'No Gitea was found. Install the Gitea app, or enter the address of your Gitea in “Gitea address”.',
-    m_bad_gitea_url: 'The Gitea address “{url}” is not a web address. Use the form http://homeassistant.local:3000.',
+    m_bad_gitea_url: 'The Gitea address “{url}” is not a web address. Use the form http://db21ed7f-gitea:3000.',
     m_bad_public_url: 'The public MCP address “{url}” must look like https://mcp.example.com (HTTPS, no path).',
     m_need_gitea_public: 'Remote access needs the public address of your Gitea under “Public Gitea address”.',
     m_bad_gitea_public: 'The public Gitea address “{url}” is not a web address.',
-    m_ca_missing: 'The certificate file “{name}” was not found in the /ssl folder.',
-    step4: '4. Connect Claude Code (optional)',
-    step4Text: 'Claude Code signs in through a small web server on your own computer. Gitea only accepts that return address with its exact port, so the port is fixed. The address with “localhost” is in the list of redirect URIs above. Replace the client ID in the command.',
-    claudeCodeCommand: 'Command for your terminal',
   },
   de: {
     recheck: 'Erneut prüfen',
@@ -93,45 +181,137 @@ const TEXT = {
     checkedAt: 'Zuletzt geprüft {0}',
     preRelease: 'Vorabversion {0}',
     problems: 'Das braucht Aufmerksamkeit',
-    connection: 'Verbindung zu Gitea',
-    noGitea: 'Kein Gitea eingerichtet',
-    noGiteaDetail: 'Installiere die Gitea-App oder trage die Adresse deines Gitea in der App-Konfiguration ein.',
+    openConfig: 'App-Konfiguration öffnen',
+    ready: 'Bereit',
+    needsRemote: 'Braucht Fernzugriff',
+    checkFailed: 'Siehe Prüfungen',
+    needsGitea: 'Braucht Gitea',
+    setUp: 'Einrichten',
+    mcpAddress: 'MCP-Adresse',
+
+    tab_overview: 'Übersicht',
+    tab_assist: 'Home Assistant',
+    tab_remote: 'Fernzugriff',
+    tab_claude: 'claude.ai',
+    tab_chatgpt: 'ChatGPT',
+    tab_code: 'Claude Code',
+    tab_other: 'Andere Agenten',
+
+    overviewIntro: 'Diese App lässt KI-Assistenten mit deinem eigenen Gitea arbeiten: Repositories durchsuchen, Dateien lesen sowie Issues und Pull Requests ansehen oder schreiben. Sie spricht das Model Context Protocol (MCP), das viele Assistenten verstehen. Du entscheidest, welche du verbindest; nichts davon ist Pflicht.',
+    connection: 'Verbindung',
+    noGiteaDetail: 'Trage die Adresse deines Gitea in der App-Konfiguration ein.',
     giteaOk: 'Gitea {0} ist erreichbar',
-    giteaApp: '{0} (Gitea-App automatisch gefunden)',
+    giteaDefault: '{0} (die Gitea-App von alexbelgium, der Standard)',
     giteaUrl: '{0} (Adresse aus der App-Konfiguration)',
     giteaBad: 'Gitea antwortet nicht',
     tokenOk: 'Angemeldet als {0}',
-    tokenOkDetail: 'Der Zugriffstoken funktioniert.',
+    tokenOkDetail: 'Jeder Assistent, der die lokale Adresse nutzt, arbeitet mit den Rechten dieses Zugriffstokens.',
     tokenNone: 'Noch kein Zugriffstoken',
-    tokenNoneDetail: 'Es sind nur öffentliche Daten lesbar. Erstelle in Gitea unter Einstellungen → Anwendungen einen Token und trage ihn in der App-Konfiguration als „Zugriffstoken“ ein.',
+    tokenNoneDetail: 'Ohne Token sind nur öffentliche Daten lesbar. Erstelle in Gitea unter Einstellungen → Anwendungen einen Token und trage ihn in der App-Konfiguration als „Zugriffstoken“ ein. Assistenten, die sich selbst anmelden (claude.ai, ChatGPT, Claude Code), brauchen ihn nicht.',
     tokenBad: 'Der Zugriffstoken funktioniert nicht',
     readOnly: 'Nur lesen',
-    readOnlyDetail: 'Werkzeuge, die etwas ändern, sind abgeschaltet.',
+    readOnlyDetail: 'Werkzeuge, die etwas ändern, sind für jeden Assistenten abgeschaltet.',
     readWrite: 'Lesen und schreiben',
-    readWriteDetail: 'Werkzeuge können Issues, Dateien und mehr anlegen und ändern. Gib dem Token nur die Rechte, die du erlauben willst.',
+    readWriteDetail: 'Werkzeuge können Issues, Dateien und mehr anlegen und ändern. Bei der lokalen Adresse bestimmt der Zugriffstoken, was erlaubt ist; bei Clients mit Anmeldung ist es das Gitea-Konto dessen, der sich anmeldet.',
     allToolsets: 'Alle Werkzeuggruppen',
     someToolsets: 'Werkzeuggruppen: {0}',
-    toolsetsDetail: 'Eine kurze Auswahl hält die Werkzeugliste klein, das hilft Sprachassistenten.',
-    homeAssistant: 'Home Assistant',
-    haIntro: 'Füge die Integration „Model Context Protocol“ hinzu und trage diese Adresse ein. Wähle sie danach im Assist-Konversationsagenten als Werkzeuganbieter aus.',
-    mcpAddress: 'MCP-Adresse',
+    toolsetsDetail: 'Eine kurze Auswahl hält die Werkzeugliste klein, das hilft Sprachassistenten und spart Token.',
+    chooseTitle: 'Was möchtest du verbinden?',
+    chooseIntro: 'Such dir die Assistenten aus, die du nutzt. Jeder hat einen eigenen Reiter mit Schritt-für-Schritt-Anleitung.',
+    tileAssist: 'Gitea im Sprachassistenten und in Chats innerhalb von Home Assistant nutzen.',
+    tileClaude: 'Claude im Browser und in den Apps, über einen benutzerdefinierten Konnektor.',
+    tileChatgpt: 'ChatGPT mit Entwicklermodus, über einen benutzerdefinierten Konnektor.',
+    tileCode: 'Die Claude-Code-Kommandozeile, mit deiner eigenen Anmeldung.',
+    tileOther: 'Cursor, OpenClaw und jedes andere Werkzeug, das MCP versteht.',
+    fitsTitle: 'So hängt es zusammen',
+    fitsLocal: 'Lokale Adresse: Home Assistant und andere Clients in deinem Netzwerk nutzen den Zugriffstoken aus der App-Konfiguration. Nichts verlässt dein Netzwerk.',
+    fitsRemote: 'Öffentliche Adresse: KI-Dienste im Internet erreichen die App über einen Tunnel oder Reverse-Proxy, den du einrichtest, und melden sich per OAuth bei deinem Gitea an, jede Person mit dem eigenen Konto. Dafür ist der Reiter „Fernzugriff“ nötig.',
+
+    assistTitle: 'Home Assistant und Assist',
+    assistIntro: 'Home Assistant kann diese App als Werkzeuganbieter für seine Konversationsagenten (Assist) nutzen. Dann kannst du per Sprache oder Chat fragen: „Welche Issues sind in meinem Smart-Home-Repository offen?“ Home Assistant ist hier der MCP-Client.',
+    assistStep1: 'Integration hinzufügen',
+    assistStep1Text: 'Füge die Integration „Model Context Protocol“ hinzu und trage diese Adresse ein. Es ist die lokale Adresse, sie arbeitet mit dem Zugriffstoken der App.',
     addIntegration: 'Integration hinzufügen',
-    remote: 'claude.ai und ChatGPT',
-    remoteOff: 'Nicht eingerichtet. Beide Dienste erreichen deinen MCP-Server über das Internet und melden sich per OAuth bei Gitea an. Zum Aktivieren trägst du die öffentlichen HTTPS-Adressen unter „Fernzugriff“ in der App-Konfiguration ein und startest die App neu. Die Dokumentation zeigt, wie du die App mit einem Tunnel veröffentlichst.',
-    openConfig: 'App-Konfiguration öffnen',
+    assistStep2: 'Dem Assistenten die Werkzeuge geben',
+    assistStep2Text: 'Öffne Einstellungen → Sprachassistenten, wähle deinen Assistenten und öffne die Einstellungen seines Konversationsagenten. Aktiviere unter „Home Assistant steuern“ den Eintrag, der nach der Integration benannt ist (meist „Gitea MCP Server“ oder der Name, den du vergeben hast). Der Konversationsagent muss Werkzeuge unterstützen, zum Beispiel die Integrationen OpenAI, Anthropic, Google oder Ollama. Der eingebaute Assist-Agent ohne Sprachmodell kann das nicht.',
+    assistStep3: 'Ausprobieren',
+    assistStep3Text: 'Frag in einem Chat mit dem Assistenten: „Liste die offenen Issues von Besitzer/Repository auf.“ oder „Zeig die letzten Commits des Hauptzweigs.“ Passiert nichts, prüfe auf der Übersicht, ob Gitea erreichbar ist.',
+    assistTips: 'Tipps',
+    assistTip1: 'Lass die App nur lesen, bis du dem Aufbau vertraust. Ein Sprachassistent sollte selten Repositories ändern dürfen.',
+    assistTip2: 'Sprachassistenten arbeiten mit weniger Werkzeugen besser. Wähle in der App-Konfiguration unter „Werkzeuggruppen“ nur, was du brauchst, zum Beispiel issue, pull_request und repository.',
+    assistTip3: 'Der Zugriffstoken bestimmt alles, was der Assistent sehen und tun kann. Erstelle einen Token nur mit den Rechten, die du erlauben willst, am besten für ein eigenes Gitea-Konto.',
+    assistTip4: 'Welche Home-Assistant-Entitäten ein Assistent steuern darf, ist eine andere Einstellung (Einstellungen → Sprachassistenten → Freigeben). Sie beeinflusst diese Werkzeuge nicht.',
+    ownServerTitle: 'Der MCP-Server von Home Assistant selbst',
+    ownServerText: 'Home Assistant hat auch eine Integration „MCP Server“. Sie zeigt MCP-Clients die Werkzeuge der LLM-APIs von Home Assistant, und die Integration „Model Context Protocol“ aus Schritt 1 meldet diese App als eine solche API an. Ein Assistent könnte Gitea also über die Adresse von Home Assistant (/api/mcp) nutzen statt über die dieser App. Der Preis: Diese Adresse setzt voraus, dass Home Assistant selbst aus dem Internet erreichbar ist, die Anmeldung läuft über ein Home-Assistant-Konto (standardmäßig ein Administrator) und alle Gitea-Aktionen laufen mit dem einen Zugriffstoken dieser App, nicht mit dem Konto dessen, der fragt. Die eigene öffentliche Adresse dieser App lässt Home Assistant außen vor und nutzt das Gitea-Konto jeder Person. Dieser Weg beruht auf der Dokumentation von Home Assistant; mit dieser App wurde er nicht getestet.',
+
+    remoteTitle: 'Fernzugriff für KI-Dienste',
+    remoteOffIntro: 'claude.ai, ChatGPT und andere Online-Assistenten erreichen dein Heimnetz nicht. Für sie bietet diese App eine zweite, öffentliche Adresse. Sie melden sich per OAuth bei Gitea an (jede Person mit dem eigenen Konto) und brauchen keinen Zugriffstoken.',
+    remoteOffNeeds: 'Was du brauchst',
+    remoteNeed1: 'Eine öffentliche HTTPS-Adresse, die zu Port 8081 dieser App führt, zum Beispiel über einen Cloudflare-Tunnel, einen Reverse-Proxy oder den Fernzugriff von Home Assistant.',
+    remoteNeed2: 'Ein Gitea, dessen Anmeldung aus dem Internet über HTTPS erreichbar ist (setze ROOT_URL in Gitea auf die öffentliche Adresse).',
+    remoteNeed3: 'Beide Adressen unter „Fernzugriff“ in der App-Konfiguration. Starte die App danach neu.',
+    remoteSecurity: 'Das öffnet die Anmeldung deines Gitea zum Internet. Nutze nur HTTPS, halte Gitea aktuell und überlege, wer sich registrieren darf.',
+    remoteOn: 'Die öffentliche Adresse ist eingerichtet. Die Prüfungen unten sehen sie sich von innerhalb deines Netzwerks an.',
+    checksTitle: 'Prüfungen',
     checkMcp: 'Die öffentliche MCP-Adresse antwortet',
-    checkAgent: 'Anfragen von Claudes Servern erreichen diese App',
+    checkAgent: 'KI-Dienste erreichen diese App',
     checkGitea: 'Die öffentliche Gitea-Adresse antwortet',
     checkOauth: 'Die Anmeldung von Gitea ist aus dem Internet erreichbar',
-    checkHint: 'Diese Prüfungen laufen innerhalb deines Netzwerks. Eine fehlgeschlagene Prüfung kann von außen trotzdem funktionieren, wenn dein Router Anfragen nicht zurückleitet.',
-    step1: '1. OAuth-Anwendung in Gitea anlegen',
-    step1Text: 'Öffne {0}, lege eine OAuth2-Anwendung mit den Werten unten an und lass „Vertraulicher Client“ abgewählt. Kopiere danach die Client-ID.',
+    checkHint: 'Diese Prüfungen laufen innerhalb deines Netzwerks. Eine fehlgeschlagene Prüfung kann von außen trotzdem funktionieren, wenn dein Router Anfragen nicht zurückleitet. Die Prüfung der KI-Dienste sendet Anfragen, die nur vorgeben, von den Diensten zu kommen: Ein Bot-Schutz vor der App behandelt sie oft wie die echten, aber das ist ein Hinweis und kein Beweis.',
+    agentsTitle: 'KI-Dienste einzeln',
+    agentOk: '{0} kommt durch',
+    oauthTitle: 'Die OAuth-Anwendung in Gitea',
+    oauthIntro: 'Alle Assistenten teilen sich eine OAuth-Anwendung in deinem Gitea. Lege sie einmal an und kopiere die Client-ID; jeder Assistenten-Reiter fragt danach.',
+    oauthStep1: 'Anwendung anlegen',
+    oauthStep1Text: 'Öffne {0}, lege eine OAuth2-Anwendung mit den Werten unten an und lass „Vertraulicher Client“ abgewählt. Kopiere ihre Client-ID.',
     appName: 'Anwendungsname',
     redirectUris: 'Weiterleitungs-URIs (eine pro Zeile)',
-    step2: '2. claude.ai verbinden',
-    step2Text: 'Öffne in claude.ai Einstellungen → Konnektoren → Benutzerdefinierten Konnektor hinzufügen. Füge die Adresse ein, öffne die erweiterten Einstellungen und trage die Client-ID ein.',
-    step3: '3. ChatGPT verbinden',
-    step3Text: 'Lege bei eingeschaltetem Entwicklermodus einen Konnektor mit OAuth, derselben Adresse und der Client-ID an. ChatGPT zeigt eine eigene Callback-Adresse: Füge sie der Gitea-Anwendung als weitere Weiterleitungs-URI hinzu.',
+    redirectHint: 'Diese decken claude.ai und Claude Code ab. ChatGPT zeigt für jeden Konnektor eine eigene Callback-Adresse, und andere Werkzeuge haben ihre: Füge jede beim Einrichten des Werkzeugs als weitere Zeile hinzu.',
+    needRemoteFirst: 'Richte zuerst die öffentliche Adresse ein (Reiter „Fernzugriff“). Die Schritte unten zeigen die Adressen zum Eintragen.',
+
+    claudeTitle: 'claude.ai',
+    claudeIntro: 'Fügt diese App als benutzerdefinierten Konnektor hinzu. Funktioniert auf claude.ai im Browser und in den Claude-Apps für das Konto, das ihn hinzufügt.',
+    claudeStep1: 'OAuth-Anwendung anlegen',
+    claudeStep1Text: 'Einmal für alle Assistenten, siehe Reiter „Fernzugriff“. Du brauchst ihre Client-ID.',
+    claudeStep2: 'Konnektor hinzufügen',
+    claudeStep2Text: 'Öffne in claude.ai Einstellungen → Konnektoren → Benutzerdefinierten Konnektor hinzufügen. Gib einen Namen ein und füge die Adresse ein.',
+    claudeStep3: 'Client-ID eintragen',
+    claudeStep3Text: 'Öffne die erweiterten Einstellungen des Konnektor-Formulars und trage die Client-ID ein. Lass das Secret leer.',
+    claudeStep4: 'Anmelden',
+    claudeStep4Text: 'Klicke auf „Verbinden“, melde dich bei deinem Gitea an und erlaube den Zugriff. Danach erscheinen die Werkzeuge in deinen Chats; schalte sie pro Chat über das „+“-Menü ein.',
+    claudeTrouble: 'Funktioniert die Anmeldung, aber die Verbindung schlägt danach fehl, ist meist ein Bot-Schutz vor der App die Ursache, der die Anfragen von Claudes Servern abweist. Die Prüfung „KI-Dienste erreichen diese App“ zeigt es.',
+
+    chatgptTitle: 'ChatGPT',
+    chatgptIntro: 'Fügt diese App als benutzerdefinierten Konnektor hinzu. Braucht den Entwicklermodus, den ChatGPT in bezahlten Tarifen anbietet.',
+    chatgptStep1: 'Entwicklermodus einschalten',
+    chatgptStep1Text: 'Öffne in den ChatGPT-Einstellungen Konnektoren → Erweitert und schalte den Entwicklermodus ein.',
+    chatgptStep2: 'Neuen Konnektor anlegen',
+    chatgptStep2Text: 'Lege einen neuen Konnektor an, gib einen Namen ein, füge die Adresse ein und wähle OAuth als Authentifizierung.',
+    chatgptStep3: 'Callback-Adresse von ChatGPT in Gitea eintragen',
+    chatgptStep3Text: 'ChatGPT zeigt jetzt eine eigene Callback-Adresse, ähnlich wie https://chatgpt.com/connector/oauth/ gefolgt von einem Zufallswert. Sie ist für jeden Konnektor anders, und Gitea akzeptiert nur Adressen, die es kennt. Öffne deine OAuth-Anwendung in Gitea und füge die Adresse als weitere Weiterleitungs-URI hinzu.',
+    chatgptStep4: 'Client-ID eintragen und Konnektor erstellen',
+    chatgptStep4Text: 'Trage die Client-ID der OAuth-Anwendung ein, erstelle den Konnektor und melde dich auf Nachfrage bei Gitea an. Schalte den Konnektor danach in einem Chat ein.',
+    chatgptTrouble: 'Eine Fehlermeldung über eine nicht registrierte Weiterleitungs-URI heißt: Schritt 3 fehlt, oder die Adresse weicht in einem Zeichen ab.',
+
+    codeTitle: 'Claude Code',
+    codeIntro: 'Fügt diese App der Claude-Code-Kommandozeile hinzu. Claude Code meldet sich über einen kleinen Webserver auf deinem eigenen Rechner an.',
+    codeStep1: 'OAuth-Anwendung anlegen',
+    codeStep1Text: 'Einmal für alle Assistenten, siehe Reiter „Fernzugriff“. Ihre Weiterleitungs-URIs enthalten schon die Adresse für Claude Code. Gitea akzeptiert diese Rücksprungadresse nur mit genau diesem Port, deshalb ist der Port fest.',
+    codeStep2: 'Server hinzufügen',
+    codeStep2Text: 'Führe das in einem Terminal aus und ersetze die Client-ID.',
+    claudeCodeCommand: 'Befehl für dein Terminal',
+    codeStep3: 'Anmelden',
+    codeStep3Text: 'Starte Claude Code, tippe /mcp, wähle den Server und melde dich im Browserfenster, das sich öffnet, bei Gitea an.',
+
+    otherTitle: 'Andere Agenten',
+    otherIntro: 'Alles, was MCP über HTTP versteht, kann diese App nutzen, zum Beispiel Cursor, OpenClaw, Codex oder eigene Skripte. Es gibt zwei Wege.',
+    otherLocal: 'Im eigenen Netzwerk, mit dem Zugriffstoken',
+    otherLocalText: 'Öffne Port 8080 dieser App unter Netzwerk in der App-Konfiguration und richte das Werkzeug auf diese Adresse. Das Werkzeug arbeitet mit den Rechten des Zugriffstokens aus der App-Konfiguration, und jeder, der den Port erreicht, ebenfalls. Nutze das nur in einem Netzwerk, dem du vertraust.',
+    otherLocalConfig: 'Beispiel für Werkzeuge mit „mcpServers“-Konfiguration',
+    otherRemote: 'Über das Internet, mit Anmeldung',
+    otherRemoteText: 'Richte die öffentliche Adresse ein (Reiter „Fernzugriff“). Das Werkzeug muss OAuth mit einer Client-ID unterstützen, die du selbst einträgst, weil Gitea keine automatische Registrierung anbietet. Füge die Callback-Adresse, die das Werkzeug zeigt, der OAuth-Anwendung als weitere Weiterleitungs-URI hinzu.',
+    otherNote: 'Einstellungen und Menüs unterscheiden sich je nach Werkzeug. Funktioniert eines nicht, zeigen die „Prüfungen“ im Reiter Fernzugriff, ob die App für es erreichbar ist, und das App-Protokoll (Debug-Protokoll einschalten), welche Anfragen ankommen.',
+
     reason_host_unknown: 'der Hostname ist unbekannt',
     reason_refused: 'die Verbindung wurde abgelehnt (läuft die App?)',
     reason_timeout: 'die Anfrage hat das Zeitlimit überschritten',
@@ -142,29 +322,25 @@ const TEXT = {
     how_cut_off: 'abgebrochen ({reason})',
     how_refused: 'mit HTTP {http} abgewiesen',
     m_no_answer: 'Die Adresse antwortet nicht: {reason}.',
-    m_blocked: '{who} weist die Anfrage ab (HTTP {http}). Claude und ChatGPT würden genauso abgewiesen: Prüfe Bot- und KI-Crawler-Schutz, Firewall-Regeln und Zugriffsrichtlinien für diesen Host.',
+    m_blocked: '{who} weist die Anfrage ab (HTTP {http}). KI-Dienste würden genauso abgewiesen: Prüfe Bot- und KI-Crawler-Schutz, Firewall-Regeln und Zugriffsrichtlinien für diesen Host.',
     m_wrong_target: 'Die öffentliche Adresse antwortet, aber nicht mit dieser App (HTTP {http}). Richte den Tunnel oder Proxy auf Port {port} dieser App.',
     m_http_status: 'Die öffentliche Gitea-Adresse antwortet mit HTTP {http}.',
     m_login_required: 'Gitea verlangt für alles eine Anmeldung; trage einen Zugriffstoken ein.',
-    m_login_required_note: 'Gitea verlangt eine Anmeldung, bevor es etwas zeigt. Für die Anmeldung von Claude und ChatGPT ist das in Ordnung.',
+    m_login_required_note: 'Gitea verlangt eine Anmeldung, bevor es etwas zeigt. Für die Anmeldung der KI-Dienste ist das in Ordnung.',
     m_not_gitea: '{url} antwortet, sieht aber nicht nach Gitea aus (HTTP {http}). Prüfe die Adresse.',
     m_token_rejected: 'Gitea akzeptiert diesen Zugriffstoken nicht.',
     m_token_http: 'Der Token konnte nicht geprüft werden (HTTP {http}).',
     m_token_unreachable: 'Der Token konnte nicht geprüft werden, weil Gitea nicht erreichbar ist.',
-    m_agent_blocked: 'Anfragen, die sich als Claude ausgeben (User-Agent Claude-User), werden {how}, während eine normale Anfrage die App erreicht. Ein Bot-Schutz davor macht das, zum Beispiel die KI-Crawler-Sperre von Cloudflare. Dieser Test kommt aus deinem eigenen Netz und ist deshalb ein Hinweis, kein Beweis: Ein Dienst kann eine Anfrage, die sich nur als Claude ausgibt, anders behandeln als Claudes echte Server. Das Sicherheitsprotokoll deiner Firewall zeigt, was die echten Anfragen (aus 160.79.104.0/21) bekommen haben.',
-    m_agent_http: 'Anfragen von Claude bekommen HTTP {http} statt der Anmeldeaufforderung dieser App.',
-    m_root_url: 'Gitea kündigt seine Anmeldung unter {endpoint} an. Setze ROOT_URL in Gitea auf {public}/, damit Claude und ChatGPT an die öffentliche Adresse geschickt werden.',
+    m_agent_blocked: 'Anfragen, die sich als {name} ausgeben (User-Agent {agent}), werden {how}, während eine normale Anfrage die App erreicht. Ein Bot-Schutz davor macht das, zum Beispiel die KI-Crawler-Sperre von Cloudflare. Das Sicherheitsprotokoll deiner Firewall zeigt, was die echten Anfragen bekommen haben.',
+    m_agents_blocked: '{count} KI-Dienst(e) werden abgewiesen oder abgebrochen, während eine normale Anfrage die App erreicht. Siehe die Liste unten.',
+    m_agent_http: 'Die MCP-Adresse antwortet nicht mit der Anmeldeaufforderung dieser App (HTTP {http}).',
+    m_root_url: 'Gitea kündigt seine Anmeldung unter {endpoint} an. Setze ROOT_URL in Gitea auf {public}/, damit die KI-Dienste an die öffentliche Adresse geschickt werden.',
     m_oauth_http: 'Die Anmelde-Adresse von Gitea antwortet mit HTTP {http}.',
     m_oauth_no_discovery: 'Gitea veröffentlicht seine Anmelde-Adressen nicht (HTTP {http}).',
-    m_no_gitea: 'Es wurde kein Gitea gefunden. Installiere die Gitea-App oder trage die Adresse deines Gitea unter „Gitea-Adresse“ ein.',
-    m_bad_gitea_url: 'Die Gitea-Adresse „{url}“ ist keine Webadresse. Nutze die Form http://homeassistant.local:3000.',
+    m_bad_gitea_url: 'Die Gitea-Adresse „{url}“ ist keine Webadresse. Nutze die Form http://db21ed7f-gitea:3000.',
     m_bad_public_url: 'Die öffentliche MCP-Adresse „{url}“ muss so aussehen: https://mcp.example.com (HTTPS, kein Pfad).',
     m_need_gitea_public: 'Der Fernzugriff braucht die öffentliche Adresse deines Gitea unter „Öffentliche Gitea-Adresse“.',
     m_bad_gitea_public: 'Die öffentliche Gitea-Adresse „{url}“ ist keine Webadresse.',
-    m_ca_missing: 'Die Zertifikatsdatei „{name}“ wurde im Ordner /ssl nicht gefunden.',
-    step4: '4. Claude Code verbinden (optional)',
-    step4Text: 'Claude Code meldet sich über einen kleinen Webserver auf deinem eigenen Rechner an. Gitea akzeptiert diese Rücksprungadresse nur mit genau diesem Port, deshalb ist der Port fest. Die Adresse mit „localhost“ steht oben in der Liste der Weiterleitungs-URIs. Ersetze im Befehl die Client-ID.',
-    claudeCodeCommand: 'Befehl für dein Terminal',
   },
 };
 
@@ -234,7 +410,233 @@ function field(label, value, rows = 0) {
 }
 
 function link(href, text, primary) {
-  return el('a', { href, target: '_blank', rel: 'noopener', className: primary ? 'button primary' : '' }, text);
+  return el('a', { href, target: '_blank', rel: 'noopener', className: primary ? 'button primary' : 'button' }, text);
+}
+
+function card(title, ...children) {
+  return el('section', { className: 'card' }, title && el('h2', {}, title), ...children);
+}
+
+function callout(kind, ...children) {
+  return el('div', { className: `callout ${kind}` }, ...children);
+}
+
+// steps([title, ...content], ...): numbered instructions.
+function steps(...items) {
+  return el('ol', { className: 'steps' }, items.map(([title, ...content]) => el('li', {}, el('h3', {}, title), ...content)));
+}
+
+function configLink(status) {
+  const slug = status.app.hostname.replace(/-/g, '_');
+  return link(`https://my.home-assistant.io/redirect/supervisor_addon/?addon=${slug}`, t('openConfig'));
+}
+
+// ---- state of the clients ------------------------------------------------------------------
+
+function remoteChecksOk(status) {
+  const checks = status.remote.checks;
+  return Boolean(checks) && ['mcp', 'agent', 'gitea', 'oauth'].every((name) => checks[name].ok);
+}
+
+function clientState(status, client) {
+  if (client === 'assist' || client === 'other') {
+    return status.local.gitea && status.local.gitea.reachable ? ['ok', t('ready')] : ['warn', t('needsGitea')];
+  }
+  if (!status.remote.public_url) return ['off', t('needsRemote')];
+  return remoteChecksOk(status) ? ['ok', t('ready')] : ['warn', t('checkFailed')];
+}
+
+// ---- panels ----------------------------------------------------------------------------------
+
+function connectionRows(status) {
+  const gitea = status.local.gitea || { reachable: false, token: { state: 'none' } };
+  const rows = [];
+  if (!status.local.url) return [row('bad', t('giteaBad'), t('noGiteaDetail'))];
+
+  const source = status.local.source === 'default' ? 'giteaDefault' : 'giteaUrl';
+  rows.push(gitea.reachable
+    ? row('ok', t('giteaOk', gitea.version || ''), t(source, status.local.url))
+    : row('bad', t('giteaBad'), `${status.local.url}: ${explain(gitea)}`));
+
+  if (gitea.token.state === 'ok') rows.push(row('ok', t('tokenOk', gitea.token.login), t('tokenOkDetail')));
+  else if (gitea.token.state === 'none') rows.push(row('warn', t('tokenNone'), t('tokenNoneDetail')));
+  else rows.push(row('bad', t('tokenBad'), explain(gitea.token)));
+
+  rows.push(status.read_only
+    ? row('ok', t('readOnly'), t('readOnlyDetail'))
+    : row('warn', t('readWrite'), t('readWriteDetail')));
+  rows.push(row('ok', status.toolsets.length ? t('someToolsets', status.toolsets.join(', ')) : t('allToolsets'),
+    status.toolsets.length ? null : t('toolsetsDetail')));
+  return rows;
+}
+
+function tile(status, tab, title, text) {
+  const [state, label] = clientState(status, tab);
+  const open = el('button', { type: 'button' }, t('setUp'));
+  open.addEventListener('click', () => selectTab(tab));
+  return el('div', { className: 'tile' }, el('h3', {}, title), el('p', {}, text),
+    el('div', { className: 'foot' }, el('span', { className: `pill ${state}` }, label), open));
+}
+
+function overviewPanel(status) {
+  return [
+    card(null, el('p', {}, t('overviewIntro'))),
+    card(t('connection'), ...connectionRows(status)),
+    card(t('chooseTitle'), el('p', { className: 'muted' }, t('chooseIntro')),
+      el('div', { className: 'grid' },
+        tile(status, 'assist', 'Home Assistant', t('tileAssist')),
+        tile(status, 'claude', 'claude.ai', t('tileClaude')),
+        tile(status, 'chatgpt', 'ChatGPT', t('tileChatgpt')),
+        tile(status, 'code', 'Claude Code', t('tileCode')),
+        tile(status, 'other', t('tab_other'), t('tileOther')))),
+    card(t('fitsTitle'), el('ul', {}, el('li', {}, t('fitsLocal')), el('li', {}, t('fitsRemote'))),
+      el('div', { className: 'actions' }, configLink(status))),
+  ];
+}
+
+function assistPanel(status) {
+  return [
+    card(t('assistTitle'), el('p', {}, t('assistIntro')),
+      steps(
+        [t('assistStep1'), el('p', {}, t('assistStep1Text')),
+          field(t('mcpAddress'), status.local.mcp_url),
+          link('https://my.home-assistant.io/redirect/config_flow_start/?domain=mcp', t('addIntegration'), true)],
+        [t('assistStep2'), el('p', {}, t('assistStep2Text'))],
+        [t('assistStep3'), el('p', {}, t('assistStep3Text'))])),
+    card(t('assistTips'), el('ul', {}, ['assistTip1', 'assistTip2', 'assistTip3', 'assistTip4'].map((key) => el('li', {}, t(key))))),
+    card(t('ownServerTitle'), el('p', {}, t('ownServerText'))),
+  ];
+}
+
+function agentRows(status, ids) {
+  const checks = status.remote.checks;
+  if (!checks) return [];
+  return checks.agent.agents.filter((agent) => !ids || ids.includes(agent.id))
+    .map((agent) => (agent.ok ? row('ok', t('agentOk', agent.name)) : row('bad', agent.name, explain(agent))));
+}
+
+function checkRows(status) {
+  const checks = status.remote.checks;
+  const agentDetail = checks.agent.ok ? null : explain(checks.agent);
+  return [
+    row(checks.mcp.ok ? 'ok' : 'bad', t('checkMcp'), explain(checks.mcp)),
+    row(checks.agent.ok ? 'ok' : 'bad', t('checkAgent'), agentDetail),
+    row(checks.gitea.ok ? 'ok' : 'bad', t('checkGitea'),
+      checks.gitea.error ? explain(checks.gitea) : explain({ code: checks.gitea.note_code }, checks.gitea.note)),
+    row(checks.oauth.ok ? 'ok' : 'bad', t('checkOauth'), explain(checks.oauth)),
+  ];
+}
+
+function oauthCard(status) {
+  const remote = status.remote;
+  return card(t('oauthTitle'), el('p', {}, t('oauthIntro')),
+    steps([t('oauthStep1'), el('p', {}, t('oauthStep1Text', `${remote.gitea_url}/user/settings/applications`)),
+      field(t('appName'), remote.app_name),
+      field(t('redirectUris'), remote.redirect_uris.join('\n'), remote.redirect_uris.length),
+      el('p', { className: 'muted' }, t('redirectHint'))]));
+}
+
+function remotePanel(status) {
+  const remote = status.remote;
+  if (!remote.public_url) {
+    return [card(t('remoteTitle'), el('p', {}, t('remoteOffIntro')),
+      el('h3', {}, t('remoteOffNeeds')),
+      el('ol', {}, ['remoteNeed1', 'remoteNeed2', 'remoteNeed3'].map((key) => el('li', {}, t(key)))),
+      callout('warn', el('p', {}, t('remoteSecurity'))),
+      el('div', { className: 'actions' }, configLink(status)))];
+  }
+  const checks = status.remote.checks;
+  return [
+    card(t('remoteTitle'), el('p', {}, t('remoteOn')), field(t('mcpAddress'), remote.mcp_url)),
+    checks && card(t('checksTitle'), ...checkRows(status), el('p', { className: 'muted' }, t('checkHint')),
+      checks.agent.agents.length > 0 && el('h3', {}, t('agentsTitle')), ...agentRows(status)),
+    oauthCard(status),
+  ];
+}
+
+// The panels of the assistants that sign in through the public address.
+function remoteGate(status) {
+  return status.remote.public_url ? null : callout('warn', el('p', {}, t('needRemoteFirst')));
+}
+
+function claudePanel(status) {
+  const remote = status.remote;
+  return [card(t('claudeTitle'), el('p', {}, t('claudeIntro')), remoteGate(status),
+    steps(
+      [t('claudeStep1'), el('p', {}, t('claudeStep1Text'))],
+      [t('claudeStep2'), el('p', {}, t('claudeStep2Text')), field(t('mcpAddress'), remote.mcp_url || '…')],
+      [t('claudeStep3'), el('p', {}, t('claudeStep3Text'))],
+      [t('claudeStep4'), el('p', {}, t('claudeStep4Text'))]),
+    callout('info', el('p', {}, t('claudeTrouble'))),
+    ...agentRows(status, ['claude', 'claude_signin']))];
+}
+
+function chatgptPanel(status) {
+  return [card(t('chatgptTitle'), el('p', {}, t('chatgptIntro')), remoteGate(status),
+    steps(
+      [t('chatgptStep1'), el('p', {}, t('chatgptStep1Text'))],
+      [t('chatgptStep2'), el('p', {}, t('chatgptStep2Text')), field(t('mcpAddress'), status.remote.mcp_url || '…')],
+      [t('chatgptStep3'), el('p', {}, t('chatgptStep3Text'))],
+      [t('chatgptStep4'), el('p', {}, t('chatgptStep4Text'))]),
+    callout('info', el('p', {}, t('chatgptTrouble'))),
+    ...agentRows(status, ['chatgpt', 'openai']))];
+}
+
+function codePanel(status) {
+  const remote = status.remote;
+  const command = `claude mcp add --transport http gitea ${remote.mcp_url || 'https://mcp.example.com/mcp'} --client-id <client-id> --callback-port ${status.claude_code_port}`;
+  return [card(t('codeTitle'), el('p', {}, t('codeIntro')), remoteGate(status),
+    steps(
+      [t('codeStep1'), el('p', {}, t('codeStep1Text'))],
+      [t('codeStep2'), el('p', {}, t('codeStep2Text')), field(t('claudeCodeCommand'), command, 3)],
+      [t('codeStep3'), el('p', {}, t('codeStep3Text'))]),
+    ...agentRows(status, ['claude_code']))];
+}
+
+function otherPanel(status) {
+  const snippet = JSON.stringify({ mcpServers: { gitea: { url: status.local.mcp_url } } }, null, 2);
+  return [
+    card(t('otherTitle'), el('p', {}, t('otherIntro'))),
+    card(t('otherLocal'), el('p', {}, t('otherLocalText')), field(t('mcpAddress'), status.local.mcp_url),
+      field(t('otherLocalConfig'), snippet, 7)),
+    card(t('otherRemote'), el('p', {}, t('otherRemoteText')),
+      status.remote.public_url ? field(t('mcpAddress'), status.remote.mcp_url) : remoteGate(status),
+      el('p', { className: 'muted' }, t('otherNote'))),
+  ];
+}
+
+const TABS = [
+  ['overview', overviewPanel], ['assist', assistPanel], ['remote', remotePanel],
+  ['claude', claudePanel], ['chatgpt', chatgptPanel], ['code', codePanel], ['other', otherPanel],
+];
+
+// ---- tabs and rendering ----------------------------------------------------------------------
+
+let currentTab = TABS.some(([name]) => name === location.hash.slice(1)) ? location.hash.slice(1) : 'overview';
+
+function showTab(name) {
+  currentTab = name;
+  history.replaceState(null, '', `#${name}`);
+  for (const [tab] of TABS) {
+    document.getElementById(`panel-${tab}`).hidden = tab !== name;
+    document.getElementById(`tab-${tab}`).setAttribute('aria-selected', String(tab === name));
+  }
+}
+
+function selectTab(name) {
+  showTab(name);
+  window.scrollTo({ top: 0 });
+}
+
+function buildTabs() {
+  const nav = document.getElementById('tabs');
+  const panels = document.getElementById('panels');
+  for (const [name] of TABS) {
+    const button = el('button', { type: 'button', id: `tab-${name}`, role: 'tab' }, t(`tab_${name}`));
+    button.addEventListener('click', () => selectTab(name));
+    nav.append(button);
+    panels.append(el('div', { id: `panel-${name}`, className: 'panel', role: 'tabpanel' }));
+  }
 }
 
 function renderProblems(status) {
@@ -245,79 +647,9 @@ function renderProblems(status) {
   banner.replaceChildren(el('h2', {}, t('problems')), ...lines.map((line) => el('p', {}, line)));
 }
 
-function giteaRows(status) {
-  const gitea = status.local.gitea;
-  if (!status.local.url) return [row('bad', t('noGitea'), t('noGiteaDetail'))];
-
-  const source = status.local.source.startsWith('app:') ? 'giteaApp' : 'giteaUrl';
-  const rows = [gitea.reachable
-    ? row('ok', t('giteaOk', gitea.version || ''), t(source, status.local.url))
-    : row('bad', t('giteaBad'), `${status.local.url}: ${explain(gitea)}`)];
-
-  if (gitea.token.state === 'ok') rows.push(row('ok', t('tokenOk', gitea.token.login), t('tokenOkDetail')));
-  else if (gitea.token.state === 'none') rows.push(row('warn', t('tokenNone'), t('tokenNoneDetail')));
-  else rows.push(row('bad', t('tokenBad'), explain(gitea.token)));
-  return rows;
-}
-
-function accessRows(status) {
-  const toolsets = status.toolsets.length ? t('someToolsets', status.toolsets.join(', ')) : t('allToolsets');
-  return [
-    status.read_only
-      ? row('ok', t('readOnly'), t('readOnlyDetail'))
-      : row('warn', t('readWrite'), t('readWriteDetail')),
-    row('ok', toolsets, status.toolsets.length ? null : t('toolsetsDetail')),
-  ];
-}
-
-function renderConnection(status) {
-  const rows = status.local.url ? [...giteaRows(status), ...accessRows(status)] : giteaRows(status);
-  document.getElementById('connection').replaceChildren(el('h2', {}, t('connection')), ...rows);
-}
-
-function renderHomeAssistant(status) {
-  const card = document.getElementById('homeassistant');
-  card.hidden = !status.local.mcp_url;
-  card.replaceChildren(
-    el('h2', {}, t('homeAssistant')),
-    el('p', {}, t('haIntro')),
-    field(t('mcpAddress'), status.local.mcp_url),
-    link('https://my.home-assistant.io/redirect/config_flow_start/?domain=mcp', t('addIntegration'), true));
-}
-
-function renderRemote(status) {
-  const card = document.getElementById('remote');
-  const remote = status.remote;
-  if (!remote.public_url) {
-    card.replaceChildren(
-      el('h2', {}, t('remote')),
-      el('p', {}, t('remoteOff')),
-      link(`https://my.home-assistant.io/redirect/supervisor_addon/?addon=${status.app.hostname.replace(/-/g, '_')}`, t('openConfig')));
-    return;
-  }
-
-  const checks = remote.checks;
-  card.replaceChildren(
-    el('h2', {}, t('remote')),
-    checks && row(checks.mcp.ok ? 'ok' : 'bad', t('checkMcp'), explain(checks.mcp)),
-    checks && row(checks.agent.ok ? 'ok' : 'bad', t('checkAgent'), explain(checks.agent)),
-    checks && row(checks.gitea.ok ? 'ok' : 'bad', t('checkGitea'), checks.gitea.error ? explain(checks.gitea) : explain({ code: checks.gitea.note_code }, checks.gitea.note)),
-    checks && row(checks.oauth.ok ? 'ok' : 'bad', t('checkOauth'), explain(checks.oauth)),
-    el('p', { className: 'muted' }, t('checkHint')),
-    el('h3', {}, t('step1')),
-    el('p', {}, t('step1Text', `${remote.gitea_url}/user/settings/applications`)),
-    field(t('appName'), 'Claude and ChatGPT'),
-    field(t('redirectUris'), remote.redirect_uris.join('\n'), remote.redirect_uris.length),
-    el('h3', {}, t('step2')),
-    el('p', {}, t('step2Text')),
-    field(t('mcpAddress'), remote.mcp_url),
-    el('h3', {}, t('step3')),
-    el('p', {}, t('step3Text')),
-    el('h3', {}, t('step4')),
-    el('p', {}, t('step4Text')),
-    field(t('claudeCodeCommand'),
-      `claude mcp add --transport http gitea ${remote.mcp_url} --client-id <client-id> --callback-port ${status.claude_code_port}`, 3));
-}
+// What the panels show, without the time of the check: they are only drawn again when it changes,
+// so that text the user is selecting or has copied stays untouched by the regular recheck.
+let lastContent = '';
 
 function render(status) {
   const release = document.getElementById('release');
@@ -326,9 +658,14 @@ function render(status) {
   release.textContent = t('preRelease', prerelease);
   document.getElementById('checked').textContent = t('checkedAt', new Date(status.checked_at).toLocaleString());
   renderProblems(status);
-  renderConnection(status);
-  renderHomeAssistant(status);
-  renderRemote(status);
+
+  const content = JSON.stringify({ ...status, checked_at: '' });
+  if (content === lastContent) return;
+  lastContent = content;
+  for (const [name, build] of TABS) {
+    document.getElementById(`panel-${name}`).replaceChildren(...build(status).filter(Boolean));
+  }
+  showTab(currentTab);
 }
 
 async function load(attempt = 0) {
@@ -355,4 +692,5 @@ async function recheck() {
 document.getElementById('recheck').textContent = t('recheck');
 document.getElementById('recheck').addEventListener('click', recheck);
 document.title = 'Gitea MCP Server';
+buildTabs();
 load();

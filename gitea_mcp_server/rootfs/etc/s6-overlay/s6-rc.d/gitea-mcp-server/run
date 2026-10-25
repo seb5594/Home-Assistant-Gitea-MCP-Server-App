@@ -17,8 +17,6 @@ log_error() { bashio::log.error "$*"; }
 LIB=/usr/lib/gitea-mcp
 # shellcheck source=../../../../usr/lib/gitea-mcp/common.sh
 source "${LIB}/common.sh"
-# shellcheck source=../../../../usr/lib/gitea-mcp/gitea-app.sh
-source "${LIB}/gitea-app.sh"
 # shellcheck source=../../../../usr/lib/gitea-mcp/settings.sh
 source "${LIB}/settings.sh"
 # shellcheck source=../../../../usr/lib/gitea-mcp/probe.sh
@@ -44,7 +42,7 @@ launch_server() {
   done
   (
     export GITEA_READONLY="$GM_READ_ONLY" GITEA_SCOPES="$GM_TOOLSETS" GITEA_DEBUG="$GM_DEBUG"
-    export GITEA_INSECURE="$insecure" GITEA_CA_CERT="$GM_CA_CERT"
+    export GITEA_INSECURE="$insecure"
     declare -x "${variables[@]}"
     exec gitea-mcp -t http -p "$port" "${flags[@]}"
   ) &

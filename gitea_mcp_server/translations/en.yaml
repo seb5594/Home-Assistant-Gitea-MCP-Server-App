@@ -1,7 +1,7 @@
 configuration:
   gitea_url:
     name: Gitea address
-    description: Leave empty to use the Gitea app installed next to this one. Otherwise enter the address of your Gitea, for example http://homeassistant.local:3000 or https://git.example.com.
+    description: Address of your Gitea. The default is the Gitea app by alexbelgium. For another app use http://<host name>:3000, for a Gitea elsewhere for example https://git.example.com.
   access_token:
     name: Access token
     description: Personal access token of your Gitea account (Gitea > Settings > Applications > Generate New Token). Home Assistant and other local clients work with the permissions of this token. The app page shows whether it works.
@@ -12,8 +12,8 @@ configuration:
     name: Toolsets
     description: Which groups of tools to offer. Leave empty for all of them. A short list keeps the tool list small, which helps voice assistants and saves tokens.
   remote_access:
-    name: Remote access for claude.ai and ChatGPT
-    description: Optional. Both services connect over the internet and sign in to Gitea with OAuth; the app page walks you through it. Leave empty to keep the app local.
+    name: Remote access for AI services
+    description: Optional. Online assistants such as claude.ai, ChatGPT and Claude Code connect over the internet and sign in to Gitea with OAuth; the app page walks you through it. Leave empty to keep the app local.
     fields:
       public_url:
         name: Public MCP address
@@ -23,11 +23,8 @@ configuration:
         description: HTTPS address of your Gitea as seen from the internet, for example https://git.example.com. Leave empty if the Gitea address above is already public.
   advanced:
     name: Advanced
-    description: Only needed for self-signed certificates and troubleshooting.
+    description: Only needed for a self-signed Gitea certificate and for troubleshooting.
     fields:
-      ca_certificate:
-        name: CA certificate file
-        description: Name of a PEM file in the /ssl folder that signed your Gitea certificate, for example my-ca.pem. The clean way to use HTTPS with your own certificate authority.
       ignore_certificate_errors:
         name: Ignore certificate errors
         description: Accepts any certificate. Only for a Gitea in your own network that you cannot give a trusted certificate.

@@ -4,8 +4,7 @@ set -Eeuo pipefail
 # in Home Assistant, not here.
 shopt -s inherit_errexit
 
-# Runs inside the built image (release pipeline). A mocked Supervisor and a mocked Gitea answer
-# the app's libraries; the real gitea-mcp binary is started and asked for its tools over MCP.
+# Runs inside the built image (release pipeline). Mocked Gitea servers answer the app's libraries; the real gitea-mcp binary is started and asked for its tools over MCP.
 LIB="${LIB_DIR:-/usr/lib/gitea-mcp}"
 RECHECK="${RECHECK_CGI:-/usr/share/gitea-mcp/web/cgi-bin/recheck}"
 NGINX_CONF="${NGINX_CONF:-/etc/gitea-mcp/nginx.conf}"
@@ -54,13 +53,7 @@ wait_for() {
 # ---- fixtures: Supervisor on 18080; Gitea on 3000 (any token), 3001 (needs a login),
 # ---- 3002 (everything behind a gate) and 3003 (announces a wrong ROOT_URL) -----------------
 
-mkdir -p "$fixture"/supervisor/addons/{db21ed7f_gitea,self} "$fixture"/gitea/api/v1 "$fixture"/gitea-locked/api/v1
-cat >"$fixture/supervisor/addons/db21ed7f_gitea/info" <<'JSON'
-{"result":"ok","data":{"name":"Gitea","hostname":"127.0.0.1","state":"started","version":"28.2.0","options":{"ssl":false,"ROOT_URL":"https://git.example.com/"}}}
-JSON
-cat >"$fixture/supervisor/addons/self/info" <<'JSON'
-{"result":"ok","data":{"hostname":"abc-gitea-mcp-server","version":"1.0.0-dev1"}}
-JSON
+mkdir -p "$fixture"/gitea/api/v1 "$fixture"/gitea-locked/api/v1
 echo '{"version":"1.24.0"}' >"$fixture/gitea/api/v1/version"
 echo '{"login":"tester"}' >"$fixture/gitea/api/v1/user"
 echo '{"version":"1.24.0"}' >"$fixture/gitea-locked/api/v1/version"
@@ -81,24 +74,23 @@ printf '/:user:secret\n' >"$fixture/gated.conf" # a gate in front of everything:
 echo '{"version":"1.24.0"}' >"$fixture/gitea-moved/api/v1/version"
 openid_configuration gitea-moved homeassistant.local:3000
 
-serve "$fixture/supervisor" 18080
 serve "$fixture/gitea" 3000
 serve "$fixture/gitea-locked" 3001 "$fixture/locked.conf"
 serve "$fixture/gitea-gated" 3002 "$fixture/gated.conf"
 serve "$fixture/gitea-moved" 3003
-wait_for http://127.0.0.1:18080/addons/self/info
 wait_for http://127.0.0.1:3000/api/v1/version
 
-export SUPERVISOR_URL=http://127.0.0.1:18080 SUPERVISOR_TOKEN=test
-export RUNTIME_DIR="$fixture/run" SSL_DIR="$fixture/ssl" OPTIONS_FILE="$fixture/options.json"
-mkdir -p "$RUNTIME_DIR" "$SSL_DIR"
+export RUNTIME_DIR="$fixture/run" OPTIONS_FILE="$fixture/options.json" VERSION_FILE="$fixture/version"
+mkdir -p "$RUNTIME_DIR"
+echo 1.0.0-dev99 >"$VERSION_FILE"
 
-# options <json>: the app options as the Supervisor would store them.
+# options <json>: the app options as the Supervisor would store them (the default Gitea address
+# is replaced by the mock).
 options() {
   jq -n --argjson overrides "$1" '
-    {gitea_url: "", access_token: "", read_only: true, toolsets: [],
+    {gitea_url: "http://127.0.0.1:3000", access_token: "", read_only: true, toolsets: [],
      remote_access: {public_url: "", gitea_public_url: ""},
-     advanced: {ca_certificate: "", ignore_certificate_errors: false, debug_logging: false}}
+     advanced: {ignore_certificate_errors: false, debug_logging: false}}
     * $overrides' >"$OPTIONS_FILE"
 }
 
@@ -115,7 +107,6 @@ settings() {
   # shellcheck source=/dev/null
   source "$LIB/common.sh"
   # shellcheck source=/dev/null
-  source "$LIB/gitea-app.sh"
   # shellcheck source=/dev/null
   source "$LIB/settings.sh"
   # shellcheck source=/dev/null
@@ -135,15 +126,16 @@ pass 'the shell libraries parse'
 
 # ---- option handling ------------------------------------------------------------------------
 
-options '{"access_token": "abc"}'
+options '{"gitea_url": ""}'
 (
   settings
-  expect_equal 'local address' 'http://127.0.0.1:3000' "$GM_LOCAL_URL"
-  expect_equal 'local source' 'app:db21ed7f_gitea' "$GM_LOCAL_SOURCE"
-  expect_equal 'host name' 'abc-gitea-mcp-server' "$GM_APP_HOSTNAME"
+  expect_equal 'default address' 'http://db21ed7f-gitea:3000' "$GM_LOCAL_URL"
+  expect_equal 'default source' 'default' "$GM_LOCAL_SOURCE"
+  expect_equal 'host name' "$(hostname)" "$GM_APP_HOSTNAME"
+  expect_equal 'version of the image' '1.0.0-dev99' "$GM_APP_VERSION"
   expect_equal 'problems' 0 "${#GM_PROBLEMS[@]}"
 )
-pass 'the Gitea app is found through the Supervisor'
+pass 'without an address the Gitea app of alexbelgium is used'
 
 options '{"gitea_url": " http://git.lan:3000/api/v1/ "}'
 (
@@ -163,15 +155,6 @@ options '{"gitea_url": "git.lan"}'
 )
 pass 'an address without scheme is reported, not started'
 
-options '{}'
-(
-  SUPERVISOR_URL=http://127.0.0.1:9
-  settings
-  expect_equal 'no local address' '' "$GM_LOCAL_URL"
-  expect_equal 'problem count' 1 "${#GM_PROBLEMS[@]}"
-)
-pass 'without any Gitea the app reports it instead of failing'
-
 options '{"remote_access": {"public_url": "http://mcp.example.com"}}'
 (
   settings
@@ -180,15 +163,15 @@ options '{"remote_access": {"public_url": "http://mcp.example.com"}}'
 )
 pass 'remote access needs an HTTPS address'
 
-options '{"remote_access": {"public_url": "https://mcp.example.com/"}}'
+options '{"gitea_url": "https://git.example.com", "remote_access": {"public_url": "https://mcp.example.com/"}}'
 (
   settings
   expect_equal 'public mcp address' 'https://mcp.example.com' "$GM_REMOTE_URL"
-  expect_equal 'public Gitea address from the app' 'https://git.example.com' "$GM_REMOTE_GITEA_URL"
+  expect_equal 'public Gitea address from the https address' 'https://git.example.com' "$GM_REMOTE_GITEA_URL"
 )
-pass 'the public Gitea address falls back to the ROOT_URL of the Gitea app'
+pass 'a Gitea address with https doubles as the public Gitea address'
 
-options '{"gitea_url": "http://127.0.0.1:3000", "remote_access": {"public_url": "https://mcp.example.com"}}'
+options '{"remote_access": {"public_url": "https://mcp.example.com"}}'
 (
   settings
   expect_equal 'remote stays off' '' "$GM_REMOTE_URL"
@@ -197,31 +180,24 @@ options '{"gitea_url": "http://127.0.0.1:3000", "remote_access": {"public_url": 
 )
 pass 'incomplete remote access does not stop the local server'
 
-options '{"advanced": {"ca_certificate": "missing.pem"}}'
-(
-  settings
-  expect_equal 'problem count' 1 "${#GM_PROBLEMS[@]}"
-)
-pass 'a missing certificate file is reported'
-
 # ---- connection checks ----------------------------------------------------------------------
 
 (
   settings
   # shellcheck disable=SC2034
-  result="$(probe_gitea http://127.0.0.1:3000 false "" token-1)"
+  result="$(probe_gitea http://127.0.0.1:3000 false token-1)"
   expect_equal 'reachable' true "$(jq -r .reachable <<<"$result")"
   expect_equal 'version' 1.24.0 "$(jq -r .version <<<"$result")"
   expect_equal 'token state' ok "$(jq -r .token.state <<<"$result")"
   expect_equal 'login' tester "$(jq -r .token.login <<<"$result")"
 
-  result="$(probe_gitea http://127.0.0.1:3000 false "" "")"
+  result="$(probe_gitea http://127.0.0.1:3000 false "")"
   expect_equal 'no token' none "$(jq -r .token.state <<<"$result")"
 
-  result="$(probe_gitea http://127.0.0.1:3001 false "" token-1)"
+  result="$(probe_gitea http://127.0.0.1:3001 false token-1)"
   expect_equal 'rejected token' rejected "$(jq -r .token.state <<<"$result")"
 
-  result="$(probe_gitea http://127.0.0.1:9 false "" "")"
+  result="$(probe_gitea http://127.0.0.1:9 false "")"
   expect_equal 'closed port' false "$(jq -r .reachable <<<"$result")"
   [[ "$(jq -r .error <<<"$result")" == *refused* ]] || fail "unhelpful message: $(jq -r .error <<<"$result")"
 )
@@ -264,24 +240,25 @@ status="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:18184/
 expect_equal 'unauthenticated MCP request' 401 "$status"
 (
   settings
-  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3000 false "")"
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3000 false)"
   expect_equal 'public MCP check' true "$(jq -r .mcp.ok <<<"$result")"
   expect_equal 'public Gitea check' true "$(jq -r .gitea.ok <<<"$result")"
   expect_equal 'Gitea sign-in check' true "$(jq -r .oauth.ok <<<"$result")"
-  expect_equal 'requests as Claude-User' true "$(jq -r .agent.ok <<<"$result")"
-  result="$(probe_remote http://127.0.0.1:18183 http://127.0.0.1:3000 false "")"
+  expect_equal 'requests as AI agents' true "$(jq -r .agent.ok <<<"$result")"
+  expect_equal 'every agent was tried' 5 "$(jq -r '.agent.agents | length' <<<"$result")"
+  result="$(probe_remote http://127.0.0.1:18183 http://127.0.0.1:3000 false)"
   expect_equal 'wrong target' false "$(jq -r .mcp.ok <<<"$result")"
 )
 pass 'the remote server asks for OAuth and the remote checks recognise it'
 
 (
   settings
-  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3002 false "")"
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3002 false)"
   expect_equal 'gated Gitea' false "$(jq -r .gitea.ok <<<"$result")"
   [[ "$(jq -r .gitea.error <<<"$result")" == *'refuses the request (HTTP 401)'* ]] || fail 'a gate in front of Gitea is not named'
   expect_equal 'gated sign-in' false "$(jq -r .oauth.ok <<<"$result")"
 
-  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3003 false "")"
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3003 false)"
   expect_equal 'moved Gitea sign-in' false "$(jq -r .oauth.ok <<<"$result")"
   [[ "$(jq -r .oauth.error <<<"$result")" == *ROOT_URL* ]] || fail 'a wrong ROOT_URL is not named'
 
@@ -298,35 +275,40 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
 
 (
   settings
-  # Bot protection that stops only requests introducing themselves as Claude-User, as Cloudflare
-  # does: first with a web page (403), then by cutting the connection off (curl error 92).
+  # Bot protection that stops only requests introducing themselves as one AI service, as
+  # Cloudflare does: first with a web page (403), then by cutting the connection off (curl error 92).
   # The library reads these variables and calls this function; shellcheck cannot see that.
   # shellcheck disable=SC2034,SC2317,SC2329
   http_get() {
     CURL_RC=0 HTTP_CODE=401 HTTP_BODY='authorization required' HTTP_HEADERS=$'HTTP/2 401\r\nwww-authenticate: Bearer resource_metadata="x"'
-    if [[ "${HTTP_USER_AGENT:-}" == "Claude-User" && "$BLOCK_MODE" == "page" ]]; then
+    if [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User/1.0" && "$BLOCK_MODE" == "page" ]]; then
       CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
-    elif [[ "${HTTP_USER_AGENT:-}" == "Claude-User" && "$BLOCK_MODE" == "reset" ]]; then
+    elif [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User/1.0" && "$BLOCK_MODE" == "reset" ]]; then
       CURL_RC=92 HTTP_CODE=000 HTTP_BODY="" HTTP_HEADERS=""
     fi
   }
   for BLOCK_MODE in page reset; do
-    result="$(BLOCK_MODE=$BLOCK_MODE probe_agent_access https://mcp.example.com false "")"
-    expect_equal "Claude-User refused ($BLOCK_MODE)" false "$(jq -r .ok <<<"$result")"
-    [[ "$(jq -r .error <<<"$result")" == *'identify as Claude'*'ordinary request reaches the app'* ]] \
-      || fail "the Claude-User refusal is not explained ($BLOCK_MODE): $(jq -r .error <<<"$result")"
+    result="$(BLOCK_MODE=$BLOCK_MODE probe_agent_access https://mcp.example.com false)"
+    expect_equal "one agent refused ($BLOCK_MODE)" false "$(jq -r .ok <<<"$result")"
+    expect_equal "summary code ($BLOCK_MODE)" agents_blocked "$(jq -r .code <<<"$result")"
+    expect_equal "only ChatGPT is named ($BLOCK_MODE)" chatgpt "$(jq -r '[.agents[] | select(.ok | not) | .id] | join(",")' <<<"$result")"
+    expect_equal "Claude passes ($BLOCK_MODE)" true "$(jq -r '.agents[] | select(.id == "claude") | .ok' <<<"$result")"
+    [[ "$(jq -r '.agents[] | select(.id == "chatgpt") | .error' <<<"$result")" == *'identify as ChatGPT'* ]] \
+      || fail "the refusal is not explained ($BLOCK_MODE)"
   done
-  result="$(BLOCK_MODE=none probe_agent_access https://mcp.example.com false "")"
+  expect_equal 'how the page refused' refused "$(BLOCK_MODE=page probe_agent_access https://mcp.example.com false | jq -r '.agents[] | select(.id == "chatgpt") | .args.how')"
+  expect_equal 'how the reset cut off' cut_off "$(BLOCK_MODE=reset probe_agent_access https://mcp.example.com false | jq -r '.agents[] | select(.id == "chatgpt") | .args.how')"
+  result="$(BLOCK_MODE=none probe_agent_access https://mcp.example.com false)"
   expect_equal 'nothing in the way' true "$(jq -r .ok <<<"$result")"
 )
 
 (
   settings
   # A real failing connection: curl ends with an error code and the probes must still answer in JSON.
-  result="$(probe_agent_access http://127.0.0.1:9 false "")"
+  result="$(probe_agent_access http://127.0.0.1:9 false)"
   expect_equal 'no answer at all' false "$(jq -r .ok <<<"$result")"
   [[ "$(jq -r .error <<<"$result")" == *'does not answer'* ]] || fail 'a closed port is not reported'
-  result="$(probe_remote http://127.0.0.1:9 http://127.0.0.1:9 false "")"
+  result="$(probe_remote http://127.0.0.1:9 http://127.0.0.1:9 false)"
   expect_equal 'remote checks without any answer' false "$(jq -r .mcp.ok <<<"$result")"
 )
 pass 'probes keep answering in JSON when a connection fails'
@@ -334,15 +316,15 @@ pass 'probes keep answering in JSON when a connection fails'
 (
   settings
   # The page translates by code: a refused connection and a wrong sign-in address must carry one.
-  result="$(probe_gitea http://127.0.0.1:9 false "" "")"
+  result="$(probe_gitea http://127.0.0.1:9 false "")"
   expect_equal 'code of a closed port' no_answer "$(jq -r .code <<<"$result")"
   expect_equal 'reason of a closed port' refused "$(jq -r .args.reason <<<"$result")"
-  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3003 false "")"
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3003 false)"
   expect_equal 'code of a wrong ROOT_URL' root_url "$(jq -r .oauth.code <<<"$result")"
   expect_equal 'argument of a wrong ROOT_URL' http://127.0.0.1:3003 "$(jq -r .oauth.args.public <<<"$result")"
 )
 pass 'problems carry a code and arguments for the translated page'
-pass 'a block of requests that identify as Claude is reported, whether refused or cut off'
+pass 'a block of one AI service is named, whether refused or cut off'
 
 # ---- request log of the remote address (debug mode) ----------------------------------------
 
@@ -379,7 +361,7 @@ pass 'the redirect URIs include the Claude Code callback'
   refresh_status >/dev/null
   expect_equal 'status: login' tester "$(jq -r .local.gitea.token.login "$RUNTIME_DIR/status.json")"
   expect_equal 'status: toolsets' issue "$(jq -r '.toolsets | join(",")' "$RUNTIME_DIR/status.json")"
-  expect_equal 'status: mcp address' http://abc-gitea-mcp-server:8080/mcp "$(jq -r .local.mcp_url "$RUNTIME_DIR/status.json")"
+  expect_equal 'status: mcp address' "http://$(hostname):8080/mcp" "$(jq -r .local.mcp_url "$RUNTIME_DIR/status.json")"
   if grep -q s3cr3t-token "$RUNTIME_DIR/status.json"; then fail 'the token leaked into status.json'; fi
 )
 pass 'the status holds the facts for the app page and no secret'
