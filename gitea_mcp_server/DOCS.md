@@ -136,24 +136,8 @@ What to know:
 * Home Assistant lists the tools when the integration loads. After you change the tool groups or
   read-only, restart the app and reload the integration.
 
-### Home Assistant's own MCP server
-
-Home Assistant has an **MCP Server** integration, too: it offers the tools of Home Assistant's LLM
-APIs to MCP clients at `/api/mcp`. The Model Context Protocol integration registers this app as one
-such API, and the MCP Server integration exposes all LLM APIs by default, so an assistant outside
-could in principle reach Gitea through Home Assistant's address instead of this app's. That is
-based on Home Assistant's documentation and source; it has not been tested with this app.
-
-Think twice before you do it:
-
-* Home Assistant itself has to be reachable from the internet, and the sign-in is a Home Assistant
-  account (an administrator by default), not your Gitea account.
-* Every Gitea action runs with the one access token of this app, not with the permissions of
-  whoever asks, so you lose the per-person permissions of the remote server.
-* This app's remote server keeps Home Assistant out of it entirely.
-
-If you have no other use for a public Home Assistant address, the remote server of this app is the
-smaller exposure.
+Home Assistant also has an MCP server of its own that can offer these tools to agents outside; see
+[Optionally through Home Assistant's own MCP server](#optionally-through-home-assistants-own-mcp-server).
 
 ## Remote access for AI services
 
@@ -209,7 +193,20 @@ Gitea cannot register clients by itself, so create one application, once, for al
 
 ## Connect claude.ai, ChatGPT, Claude Code and others
 
-The tabs of the app page show every step with your addresses filled in. In short:
+The tabs of the app page (*Home Assistant*, *Claude Code*, *claude.ai*, *ChatGPT*, *Other agents*,
+*Remote access*) show every step with your addresses filled in. In short:
+
+### Claude Code
+
+Claude Code signs in through a small web server on your own computer. Gitea accepts such a return
+address only with its exact port (it ignores the port for `127.0.0.1`, but not for `localhost`),
+so the port is fixed to `3118`, and `http://localhost:3118/callback` is among the redirect URIs.
+
+```bash
+claude mcp add --transport http gitea https://mcp.example.com/mcp --client-id <client-id> --callback-port 3118
+```
+
+Then run `/mcp` in Claude Code and sign in.
 
 ### claude.ai
 
@@ -228,29 +225,42 @@ ChatGPT now shows a callback address of its own, like
 to the redirect URIs of the Gitea application, enter the client ID and create the connector.
 Without that step Gitea answers *Unregistered Redirect URI*.
 
-### Claude Code
-
-Claude Code signs in through a small web server on your own computer. Gitea accepts such a return
-address only with its exact port (it ignores the port for `127.0.0.1`, but not for `localhost`),
-so the port is fixed to `3118`, and `http://localhost:3118/callback` is among the redirect URIs.
-
-```bash
-claude mcp add --transport http gitea https://mcp.example.com/mcp --client-id <client-id> --callback-port 3118
-```
-
-Then run `/mcp` in Claude Code and sign in.
-
 ### Other agents (Cursor, OpenClaw, Codex, your own scripts …)
 
-Anything that speaks MCP over HTTP can use the app:
+Anything that speaks MCP over HTTP can use the app. The address depends on where the agent runs:
 
-* **On your network, with the access token.** Publish port 8080 under *Network* and point the
-  tool at `http://<host name>:8080/mcp`. Most tools take a configuration like
-  `{"mcpServers": {"gitea": {"url": "http://<host name>:8080/mcp"}}}`. Anyone who can reach
-  the port acts with the permissions of your token, so use it only in a network you trust.
-* **Over the internet, with sign-in.** The tool must support OAuth with a client ID you enter
-  yourself, because Gitea does not offer automatic client registration. Add the callback address
-  the tool shows to the redirect URIs of the Gitea application.
+| Where the agent runs | Address | What to do |
+| --- | --- | --- |
+| **As an app on Home Assistant OS** | `http://<host name of this app>:8080/mcp`, for example `http://4c7fee11-gitea-mcp-server:8080/mcp` | Nothing: apps reach each other by host name on Home Assistant's internal network. The app page shows the exact address. |
+| **On another machine in your network** | `http://<IP address or local host name of Home Assistant>:8080/mcp`, for example `http://homeassistant.local:8080/mcp` | Publish port 8080 under *Network* in the configuration of this app. |
+| **On the internet** | `https://mcp.example.com/mcp` (the public address) | Set up [remote access](#remote-access-for-ai-services). The tool must accept a client ID and show a callback address, which you add to the redirect URIs of the Gitea application. |
+
+The first two use the access token of the app. Anyone who can reach the port acts with its permissions,
+so publish port 8080 only in a network you trust. Most tools take a configuration like
+`{"mcpServers": {"gitea": {"url": "http://<host name>:8080/mcp"}}}`. The third way needs no token: every
+user signs in to Gitea.
+
+### Optionally through Home Assistant's own MCP server
+
+Home Assistant has an **MCP Server** integration of its own. According to its
+[documentation](https://www.home-assistant.io/integrations/mcp_server/):
+
+* Add it under Settings → Devices & services → Add integration → **MCP Server**.
+* It runs on the port of Home Assistant itself (8123) at the path `/api/mcp`, for example
+  `http://homeassistant.local:8123/api/mcp`. Cloud agents need Home Assistant reachable from the
+  internet over HTTPS; Claude Code requires HTTPS.
+* Sign-in is OAuth with a Home Assistant account (PKCE, no client secret). *Require an administrator
+  account* is on by default.
+* It offers the tools of Home Assistant's LLM APIs. *Expose all LLM APIs* is on by default; switch it
+  off to choose the APIs under *Control Home Assistant*.
+
+The Model Context Protocol integration, which you add to use this app with Assist, registers this app
+as one such LLM API. So the Gitea tools should come along through Home Assistant's address. That follows
+Home Assistant's documentation and source; it has not been tested with this app.
+
+The trade-offs: every Gitea action runs with the one access token of this app, not with the permissions
+of whoever asks, and Home Assistant itself becomes the public address. This app's own remote server
+keeps Home Assistant out of it and uses the Gitea account of each person.
 
 ### How the remote server behaves
 
@@ -288,7 +298,7 @@ messages.
 | *remote_access.public_url must look like https://…* | HTTPS only, no path, for example `https://mcp.example.com`. |
 | *The public address answers, but not with this app* | The tunnel or proxy points at the wrong place. It has to forward to port 8081 of this app. |
 | *The public address does not answer* | The tunnel is down, DNS is missing, or your router does not loop requests back. If the connector works from outside, ignore this. |
-| *refuses the request (HTTP 403)*, *Cloudflare refuses…*, *… are refused or cut off* | Something in front of Gitea or of this app turns away requests that do not come from a person in a browser. See [Connection failed after signing in](#connection-failed-after-signing-in). |
+| *refuses the request (HTTP 403)*, *Cloudflare refuses…* | Something in front of Gitea or of this app turns away requests that do not come from a person in a browser. See [Connection failed after signing in](#connection-failed-after-signing-in). |
 | *Gitea announces its sign-in at …* | Gitea builds its sign-in addresses from `ROOT_URL`. Set it to your public Gitea address, with a trailing slash. In the Gitea app this is the `ROOT_URL` option. |
 | *Gitea asks for a sign-in before it shows anything* | Not a problem. Gitea runs with `REQUIRE_SIGNIN_VIEW`, and the sign-in of the AI services works with it. |
 | *Unregistered Redirect URI* when signing in | The callback address of the tool is not among the redirect URIs of the Gitea application. ChatGPT's changes with every connector. Copy it exactly. |
@@ -304,17 +314,19 @@ then calls this app with another that calls itself `Claude-User`; Claude Code ca
 then refuses exactly one of these names, so the sign-in looks fine and the connection still
 fails.
 
-The check **AI services reach this app** (tab *Remote access*) makes the same calls, one name after
-the other, and shows which one gets through. You can also try it yourself:
+The *test requests* on the tab *Remote access* make calls that only claim to come from the services
+(`Claude-User`, `python-httpx`, `ChatGPT-User`, `claude-code/<version>`), one name after the other, and
+show which one is turned away. You can also try it yourself:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" -A "Claude-User" -X POST https://mcp.example.com/mcp \
   -H "Content-Type: application/json" -d '{}'
 ```
 
-This call comes from your own network and only claims to be Claude; a firewall may treat it
-differently from the real servers, so a block here is a hint, not proof. The security log of the
-firewall shows what the real requests got.
+This call comes from your own network and only claims to be Claude. Bot protection such as
+Cloudflare's often lets the real service in by its address and turns look-alikes away, so ChatGPT, for
+example, can be refused in the test and still connect without a problem. A block here is a hint, not proof:
+if your connector works, ignore it. The security log of the firewall shows what the real requests got.
 
 `401` is right: the request reached the app and was asked to sign in. `403`, a web page, or a cut
 connection (`HTTP/2 stream … PROTOCOL_ERROR`, `Empty reply`) means something in front of it stops
