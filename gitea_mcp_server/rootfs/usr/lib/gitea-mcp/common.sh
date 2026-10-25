@@ -49,12 +49,13 @@ is_https_origin() {
 # message <code> <english text> [name value ...]
 # One message as JSON; the arguments become the "args" object.
 message() {
-  local code="$1" text="$2"
+  local code="$1" text="$2" args='{}'
   shift 2
-  jq -nc --arg code "$code" --arg text "$text" '
-    {code: $code, text: $text,
-     args: (if ($ARGS.positional | length) == 0 then {}
-            else [$ARGS.positional | _nwise(2) | {(.[0]): .[1]}] | add end)}' --args "$@"
+  while (($# >= 2)); do
+    args="$(jq -c --arg name "$1" --arg value "$2" '. + {($name): $value}' <<<"$args")"
+    shift 2
+  done
+  jq -nc --arg code "$code" --arg text "$text" --argjson args "$args" '{code: $code, text: $text, args: $args}'
 }
 
 # set_error <name> <code> <english text> [name value ...]

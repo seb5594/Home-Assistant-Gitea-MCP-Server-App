@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0-dev9
+
+* "Open app configuration" on the app page now opens the configuration of this app (it used a
+  short name that only works for apps from the local folder).
+* Messages whose values start with a dash no longer break the checks.
+* New releases of Gitea MCP are followed by a scheduled workflow, which raises the app version.
+
 ## 1.0.0-dev8
 
 * The app page is fully translated: the messages of the checks and the configuration problems
