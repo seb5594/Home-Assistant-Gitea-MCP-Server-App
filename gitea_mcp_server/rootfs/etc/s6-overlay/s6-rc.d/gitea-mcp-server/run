@@ -1,0 +1,119 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+# shellcheck source-path=SCRIPTDIR
+# Resolves the app options, starts the MCP servers and keeps the app alive.
+#
+# Two servers can run side by side:
+#   local   the configured access token; for Home Assistant and other clients on the network
+#   remote  OAuth against Gitea; for claude.ai and ChatGPT, only when remote_access is set up
+
+# Bashio debug output would print Supervisor replies.
+bashio::log.level info
+
+log_info() { bashio::log.info "$*"; }
+log_warning() { bashio::log.warning "$*"; }
+log_error() { bashio::log.error "$*"; }
+
+LIB=/usr/lib/gitea-mcp
+# shellcheck source=../../../../usr/lib/gitea-mcp/common.sh
+source "${LIB}/common.sh"
+# shellcheck source=../../../../usr/lib/gitea-mcp/gitea-app.sh
+source "${LIB}/gitea-app.sh"
+# shellcheck source=../../../../usr/lib/gitea-mcp/settings.sh
+source "${LIB}/settings.sh"
+# shellcheck source=../../../../usr/lib/gitea-mcp/probe.sh
+source "${LIB}/probe.sh"
+# shellcheck source=../../../../usr/lib/gitea-mcp/status.sh
+source "${LIB}/status.sh"
+
+PIDS=()
+
+# launch_server <name> <port> <ignore-tls> [VARIABLE=value ...]
+# Starts one gitea-mcp in the background. Settings go in through the environment, which
+# keeps the access token out of the process list.
+launch_server() {
+  local name="$1" port="$2" insecure="$3"
+  shift 3
+  (
+    export GITEA_READONLY="$GM_READ_ONLY" GITEA_SCOPES="$GM_TOOLSETS" GITEA_DEBUG="$GM_DEBUG"
+    export GITEA_INSECURE="$insecure" GITEA_CA_CERT="$GM_CA_CERT"
+    declare -x "$@"
+    exec gitea-mcp -t http -p "$port"
+  ) &
+  PIDS+=($!)
+  echo "$port" >>"${RUNTIME_DIR}/ports"
+  log_info "Started the ${name} MCP server on port ${port}."
+}
+
+start_servers() {
+  mkdir -p "$RUNTIME_DIR"
+  : >"${RUNTIME_DIR}/ports"
+
+  if [[ -n "$GM_LOCAL_URL" ]]; then
+    launch_server local "$GM_LOCAL_PORT" "$GM_LOCAL_INSECURE" \
+      GITEA_HOST="$GM_LOCAL_URL" GITEA_ACCESS_TOKEN="$GM_TOKEN"
+  fi
+  if [[ -n "$GM_REMOTE_URL" ]]; then
+    launch_server remote "$GM_REMOTE_PORT" "$GM_IGNORE_TLS" \
+      GITEA_HOST="$GM_REMOTE_GITEA_URL" GITEA_MCP_OAUTH=true GITEA_MCP_PUBLIC_URL="$GM_REMOTE_URL"
+  fi
+}
+
+stop_servers() {
+  if ((${#PIDS[@]} > 0)); then
+    kill "${PIDS[@]}" 2>/dev/null || true
+    wait "${PIDS[@]}" 2>/dev/null || true
+  fi
+}
+
+log_endpoints() {
+  local access="read and write" toolsets="all toolsets"
+  if [[ "$GM_READ_ONLY" == "true" ]]; then
+    access="read-only"
+  fi
+  if [[ -n "$GM_TOOLSETS" ]]; then
+    toolsets="toolsets ${GM_TOOLSETS//,/, }"
+  fi
+  log_info "Access: ${access}, ${toolsets}."
+  if [[ "$GM_DEBUG" == "true" ]]; then
+    log_warning "Debug logging prints every request sent to Gitea. Switch it off after troubleshooting."
+  fi
+  if [[ -n "$GM_LOCAL_URL" ]]; then
+    log_info "Home Assistant: add the 'Model Context Protocol' integration with the address http://${GM_APP_HOSTNAME}:${GM_LOCAL_PORT}/mcp"
+  fi
+  if [[ -n "$GM_REMOTE_URL" ]]; then
+    log_info "claude.ai and ChatGPT: use the connector address ${GM_REMOTE_URL}/mcp"
+  fi
+  log_info "Open the app page (Open Web UI) for step-by-step help."
+}
+
+# Keeps the app running without a server, so that the app page can still explain what is missing.
+idle() {
+  log_warning "Nothing could be started. The app page tells what to change in the configuration."
+  trap 'exit 0' TERM INT
+  sleep 2147483647 &
+  wait $!
+}
+
+main() {
+  log_info "Starting Gitea MCP Server"
+  resolve_settings
+  start_servers
+  if ((${#PIDS[@]} == 0)); then
+    refresh_status >/dev/null
+    idle
+  fi
+
+  trap 'stop_servers; exit 0' TERM INT
+  sleep 1 # the remote check below talks to the server that was just started
+  refresh_status >/dev/null
+  log_status
+  log_endpoints
+
+  wait -n "${PIDS[@]}"
+  log_error "An MCP server stopped unexpectedly."
+  stop_servers
+  exit 1
+}
+
+main "$@"
