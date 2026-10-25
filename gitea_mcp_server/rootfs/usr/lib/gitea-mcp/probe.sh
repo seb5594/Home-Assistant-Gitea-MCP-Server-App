@@ -22,12 +22,13 @@ http_get() {
   if [[ -n "${HTTP_USER_AGENT:-}" ]]; then
     args+=(-A "$HTTP_USER_AGENT")
   fi
+  # A failing curl must not end the script (bashio runs services with errexit): keep its exit code.
+  CURL_RC=0
   HTTP_CODE="$(
     if [[ -n "$token" ]]; then
       printf 'header = "Authorization: token %s"\n' "$token"
     fi | curl "${args[@]}" "$url" 2>/dev/null
-  )"
-  CURL_RC=$?
+  )" || CURL_RC=$?
   HTTP_BODY="$(cat "$body_file")"
   HTTP_HEADERS="$(cat "$header_file")"
   rm -f "$body_file" "$header_file"
@@ -94,7 +95,7 @@ probe_gitea() {
   if [[ -n "$token" && "$reachable" == "true" ]]; then
     http_get "${url}/api/v1/user" "$insecure" "$ca_file" "$token"
     case "$HTTP_CODE" in
-      200) token_state="ok"; login="$(jq -r '.login // ""' <<<"$HTTP_BODY" 2>/dev/null)" ;;
+      200) token_state="ok"; login="$(jq -r '.login // ""' <<<"$HTTP_BODY" 2>/dev/null)" || login="" ;;
       401 | 403) token_state="rejected"; token_error="Gitea does not accept this access token." ;;
       *) token_state="error"; token_error="The token could not be checked (HTTP ${HTTP_CODE})." ;;
     esac
