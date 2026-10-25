@@ -202,6 +202,11 @@ curl -s -o /dev/null -w "%{http_code}\n" -A "Claude-User" -X POST https://mcp.ex
   -H "Content-Type: application/json" -d '{}'
 ```
 
+Keep in mind that this call comes from your own network and only claims to be Claude. A firewall may
+treat that differently from Claude's real servers, so a block here is a hint, not proof. The
+security log of the firewall shows what the real requests got: filter it by the address range
+`160.79.104.0/21` that Anthropic uses and look for entries whose action is not *skip* or *allow*.
+
 `401` is right: the request reached the app and was asked to sign in. `403`, a web page, or a cut
 connection (`HTTP/2 stream … PROTOCOL_ERROR`, `Empty reply`) means something in front of it stops
 the request. Run it once more with `-A "curl/8.5.0"`: if that one returns `401`, the block is about
