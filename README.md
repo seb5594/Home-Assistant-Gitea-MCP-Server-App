@@ -2,7 +2,7 @@
 <h1 align="center">Gitea MCP-Server</h1>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/seb5594/Home-Assistant-Gitea-MCP-Server-App/dev/gitea_mcp_server/logo.png" alt="Gitea MCP-Server" width="286" height="160">
+  <img src="https://raw.githubusercontent.com/seb5594/Home-Assistant-Gitea-MCP-Server-App/main/gitea_mcp_server/logo.png" alt="Gitea MCP-Server" width="286" height="160">
 </p>
 
 ---
