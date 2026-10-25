@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-dev3
+
+* New check for remote access: the public address is called the way Claude's servers call it
+  (User-Agent `Claude-User`), because bot protection such as Cloudflare's often accepts the
+  sign-in and then refuses exactly these calls, which ends in "connection failed" in claude.ai.
+  The message names the cause and where to change it.
+* Documentation: how to test this by hand and where to look in Cloudflare.
+
 ## 1.0.0-dev2
 
 * The checks for remote access tell apart Gitea's own sign-in requirement (shown as fine) from a
