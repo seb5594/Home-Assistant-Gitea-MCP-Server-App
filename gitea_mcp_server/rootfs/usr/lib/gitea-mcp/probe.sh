@@ -111,22 +111,36 @@ probe_gitea() {
 
 # probe_agent_access <mcp-public-url> <insecure> <ca-file>
 # Claude signs in with one service and then calls the MCP address with another that introduces
-# itself as "Claude-User". Bot protection in front of the app often refuses exactly that one
-# after the sign-in worked, so the request is made the same way. Without a token the app
-# answers 401 with a WWW-Authenticate header, which proves the request reached it.
+# itself as "Claude-User". Bot protection in front of the app often refuses or cuts off exactly
+# that one after the sign-in worked, so the request is made the same way. Without a token the
+# app answers 401 with a WWW-Authenticate header, which proves the request reached it. A second,
+# ordinary request tells a block of Claude from an address that does not answer at all.
 # {"ok", "error"}
 probe_agent_access() {
-  local ok=false error=""
+  local mcp_url="$1" insecure="$2" ca_file="$3"
+  local ok=false error="" agent_code agent_reason
 
-  HTTP_METHOD=POST HTTP_USER_AGENT="Claude-User" http_get "${1}/mcp" "$2" "$3"
+  HTTP_METHOD=POST HTTP_USER_AGENT="Claude-User" http_get "${mcp_url}/mcp" "$insecure" "$ca_file"
   if [[ "$HTTP_CODE" == "401" ]] && grep -qi '^www-authenticate: *bearer' <<<"$HTTP_HEADERS"; then
     ok=true
-  elif [[ "$HTTP_CODE" == "000" ]]; then
-    error="The public address does not answer: $(describe_failure)."
-  elif is_blocked || [[ "$HTTP_CODE" == "403" ]]; then
-    error="$(describe_block) This happens for requests that identify as Claude (User-Agent Claude-User), while a normal request gets through."
   else
-    error="Requests from Claude get HTTP ${HTTP_CODE} instead of the sign-in challenge of this app."
+    agent_code="$HTTP_CODE"
+    if [[ "$agent_code" == "000" ]]; then
+      agent_reason="cut off ($(describe_failure))"
+    else
+      agent_reason="refused with HTTP ${agent_code}"
+    fi
+
+    HTTP_METHOD=POST HTTP_USER_AGENT="" http_get "${mcp_url}/mcp" "$insecure" "$ca_file"
+    if [[ "$HTTP_CODE" == "401" ]] && grep -qi '^www-authenticate: *bearer' <<<"$HTTP_HEADERS"; then
+      error="Requests that identify as Claude (User-Agent Claude-User) are ${agent_reason}, while an ordinary request reaches the app. Bot protection in front of it does this, for example Cloudflare's blocking of AI crawlers. Allow Claude-User there; Claude would otherwise sign in and then fail to connect."
+    elif [[ "$HTTP_CODE" == "000" ]]; then
+      error="The public address does not answer: $(describe_failure)."
+    elif is_blocked; then
+      error="$(describe_block)"
+    else
+      error="Requests from Claude get HTTP ${agent_code} instead of the sign-in challenge of this app."
+    fi
   fi
 
   jq -nc --argjson ok "$ok" --arg error "$error" '{ok: $ok, error: $error}'

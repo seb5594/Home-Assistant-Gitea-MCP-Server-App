@@ -202,8 +202,10 @@ curl -s -o /dev/null -w "%{http_code}\n" -A "Claude-User" -X POST https://mcp.ex
   -H "Content-Type: application/json" -d '{}'
 ```
 
-`401` is right: the request reached the app and was asked to sign in. `403` or a web page means
-something in front of it refuses the request.
+`401` is right: the request reached the app and was asked to sign in. `403`, a web page, or a cut
+connection (`HTTP/2 stream … PROTOCOL_ERROR`, `Empty reply`) means something in front of it stops
+the request. Run it once more with `-A "curl/8.5.0"`: if that one returns `401`, the block is about
+the name Claude introduces itself with.
 
 With **Cloudflare**, look at these places for both host names (Gitea and this app):
 
