@@ -332,8 +332,8 @@ pass 'a block of requests that identify as Claude is reported, whether refused o
 
 # ---- request log of the remote address (debug mode) ----------------------------------------
 
-nginx -t -e stderr -c "$NGINX_CONF" >/dev/null 2>&1 || fail 'the nginx configuration of the request log is invalid'
-mkdir -p /run/gitea-mcp /tmp/gitea-mcp-nginx
+mkdir -p /run/gitea-mcp /tmp/gitea-mcp-nginx # the start script creates them as well
+nginx_check="$(nginx -t -e stderr -c "$NGINX_CONF" 2>&1)" || fail "the nginx configuration of the request log is invalid: ${nginx_check}"
 start_server 8082 -b=127.0.0.1
 nginx -e stderr -c "$NGINX_CONF" 2>>"$fixture/nginx.log" &
 pids+=($!)
