@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-dev8
+
+* The app page is fully translated: the messages of the checks and the configuration problems
+  now come as codes and are shown in German when the browser prefers German, otherwise in
+  English. The log stays in English.
+* Claude Code: the redirect address `http://localhost:3118/callback` is in the list of the app
+  page, together with a ready-to-copy `claude mcp add` command with the fixed callback port.
+
 ## 1.0.0-dev7
 
 * Debug logging now also writes one line per request to the remote address: method, path,

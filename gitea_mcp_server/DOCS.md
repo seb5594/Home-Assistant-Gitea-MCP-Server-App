@@ -147,6 +147,20 @@ ChatGPT shows a callback address of its own for the connector. Add it to the red
 the Gitea application, then connect. If ChatGPT insists on a client secret, create a second
 OAuth application in Gitea with **Confidential Client** checked and use its ID and secret.
 
+### Connect Claude Code
+
+Claude Code also works with this server and is a handy way to test it from your own computer.
+It signs in through a small web server on your machine, and Gitea accepts such a return address
+only with its exact port (it ignores the port for `127.0.0.1` but not for `localhost`). The port
+is therefore fixed to `3118`, and `http://localhost:3118/callback` is in the list of redirect URIs
+of the app page. Add the server with your client ID:
+
+```bash
+claude mcp add --transport http gitea https://mcp.example.com/mcp --client-id <client-id> --callback-port 3118
+```
+
+Then run `/mcp` in Claude Code and sign in.
+
 ### How the remote mode behaves
 
 * **Read-only** and **Toolsets** apply to the remote connection as well. Read-only also asks

@@ -158,6 +158,8 @@ options '{"gitea_url": "git.lan"}'
   settings
   expect_equal 'no local address' '' "$GM_LOCAL_URL"
   expect_equal 'problem count' 1 "${#GM_PROBLEMS[@]}"
+  expect_equal 'problem code' bad_gitea_url "$(jq -r '.problem_details[0].code' "$RUNTIME_DIR/resolved.json")"
+  expect_equal 'problem argument' git.lan "$(jq -r '.problem_details[0].args.url' "$RUNTIME_DIR/resolved.json")"
 )
 pass 'an address without scheme is reported, not started'
 
@@ -328,6 +330,18 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
   expect_equal 'remote checks without any answer' false "$(jq -r .mcp.ok <<<"$result")"
 )
 pass 'probes keep answering in JSON when a connection fails'
+
+(
+  settings
+  # The page translates by code: a refused connection and a wrong sign-in address must carry one.
+  result="$(probe_gitea http://127.0.0.1:9 false "" "")"
+  expect_equal 'code of a closed port' no_answer "$(jq -r .code <<<"$result")"
+  expect_equal 'reason of a closed port' refused "$(jq -r .args.reason <<<"$result")"
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3003 false "")"
+  expect_equal 'code of a wrong ROOT_URL' root_url "$(jq -r .oauth.code <<<"$result")"
+  expect_equal 'argument of a wrong ROOT_URL' http://127.0.0.1:3003 "$(jq -r .oauth.args.public <<<"$result")"
+)
+pass 'problems carry a code and arguments for the translated page'
 pass 'a block of requests that identify as Claude is reported, whether refused or cut off'
 
 # ---- request log of the remote address (debug mode) ----------------------------------------
@@ -354,6 +368,12 @@ pass 'the request log shows method, status, agent and whether a token was sent, 
 # ---- app page -------------------------------------------------------------------------------
 
 options '{"access_token": "s3cr3t-token", "toolsets": ["issue"]}'
+(
+  settings
+  grep -q 'http://localhost:3118/callback' <<<"$(jq -r '.remote.redirect_uris[]' "$RUNTIME_DIR/resolved.json")" || fail 'the Claude Code callback is not in the redirect URIs'
+  expect_equal 'Claude Code port' 3118 "$(jq -r .claude_code_port "$RUNTIME_DIR/resolved.json")"
+)
+pass 'the redirect URIs include the Claude Code callback'
 (
   settings
   refresh_status >/dev/null

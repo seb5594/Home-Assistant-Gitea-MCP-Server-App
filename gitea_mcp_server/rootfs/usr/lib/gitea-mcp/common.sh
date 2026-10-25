@@ -45,3 +45,23 @@ is_http_url() {
 is_https_origin() {
   [[ "$1" =~ ^https://[^/[:space:]]+$ ]]
 }
+
+# message <code> <english text> [name value ...]
+# One message as JSON; the arguments become the "args" object.
+message() {
+  local code="$1" text="$2"
+  shift 2
+  jq -nc --arg code "$code" --arg text "$text" '
+    {code: $code, text: $text,
+     args: (if ($ARGS.positional | length) == 0 then {}
+            else [$ARGS.positional | _nwise(2) | {(.[0]): .[1]}] | add end)}' --args "$@"
+}
+
+# set_error <name> <code> <english text> [name value ...]
+# Sets <name>_error (the text) and <name>_msg (the message JSON) in the calling function.
+set_error() {
+  local name="$1"
+  shift
+  printf -v "${name}_error" '%s' "$2"
+  printf -v "${name}_msg" '%s' "$(message "$@")"
+}

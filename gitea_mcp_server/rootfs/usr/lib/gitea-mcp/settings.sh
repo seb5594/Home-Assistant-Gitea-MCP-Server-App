@@ -16,17 +16,28 @@ GM_REMOTE_UPSTREAM_PORT=8082
 
 # Where claude.ai and ChatGPT send the user back after signing in to Gitea.
 # ChatGPT also shows a callback of its own in the connector form; that one is added by hand.
+# Claude Code opens a local web server for the sign-in. Gitea ignores the port only for
+# 127.0.0.1, not for localhost, so the port is fixed here and set with --callback-port.
+CLAUDE_CODE_PORT=3118
 REMOTE_REDIRECT_URIS=(
   "https://claude.ai/api/mcp/auth_callback"
   "https://claude.com/api/mcp/auth_callback"
   "https://chatgpt.com/connector_platform_oauth_redirect"
+  "http://localhost:${CLAUDE_CODE_PORT}/callback"
 )
 
 GM_PROBLEMS=()
+GM_PROBLEM_DETAILS=()
 
+# add_problem <code> <english text> [name value ...]
+# Collects a problem as text (log and fallback) and as code with arguments (the app page
+# translates it into the language of the browser).
 add_problem() {
-  GM_PROBLEMS+=("$1")
-  log_error "$1"
+  local code="$1" text="$2"
+  shift 2
+  GM_PROBLEMS+=("$text")
+  GM_PROBLEM_DETAILS+=("$(message "$code" "$text" "$@")")
+  log_error "$text"
 }
 
 resolve_ca_certificate() {
@@ -35,7 +46,7 @@ resolve_ca_certificate() {
   name="$(option advanced.ca_certificate)"
   [[ -z "$name" ]] && return 0
   if [[ "$name" == *..* || ! -f "${SSL_DIR}/${name}" ]]; then
-    add_problem "Certificate file '${name}' was not found in the /ssl folder."
+    add_problem ca_missing "Certificate file '${name}' was not found in the /ssl folder." name "$name"
     return 0
   fi
   GM_CA_CERT="${SSL_DIR}/${name}"
@@ -56,7 +67,7 @@ resolve_local_gitea() {
       GM_LOCAL_URL="$configured"
       GM_LOCAL_SOURCE="url"
     else
-      add_problem "gitea_url '${configured}' is not a web address. Use the form http://homeassistant.local:3000."
+      add_problem bad_gitea_url "gitea_url '${configured}' is not a web address. Use the form http://homeassistant.local:3000." url "$configured"
     fi
   elif GM_APP_JSON="$(find_gitea_app)"; then
     scheme="http"
@@ -71,7 +82,7 @@ resolve_local_gitea() {
       log_info "The Gitea app uses SSL; its certificate is not checked for the connection inside Home Assistant."
     fi
   else
-    add_problem "No Gitea was found. Install the Gitea app, or enter the address of your Gitea in 'gitea_url'."
+    add_problem no_gitea "No Gitea was found. Install the Gitea app, or enter the address of your Gitea in 'gitea_url'."
   fi
 }
 
@@ -84,7 +95,7 @@ resolve_remote_access() {
   public="$(trim_url "$(option remote_access.public_url)")"
   [[ -z "$public" ]] && return 0
   if ! is_https_origin "$public"; then
-    add_problem "remote_access.public_url '${public}' must look like https://mcp.example.com (HTTPS, no path)."
+    add_problem bad_public_url "remote_access.public_url '${public}' must look like https://mcp.example.com (HTTPS, no path)." url "$public"
     return 0
   fi
 
@@ -101,11 +112,11 @@ resolve_remote_access() {
     fi
   fi
   if [[ -z "$gitea_public" ]]; then
-    add_problem "Remote access needs the public address of your Gitea in remote_access.gitea_public_url."
+    add_problem need_gitea_public "Remote access needs the public address of your Gitea in remote_access.gitea_public_url."
     return 0
   fi
   if ! is_http_url "$gitea_public"; then
-    add_problem "remote_access.gitea_public_url '${gitea_public}' is not a web address."
+    add_problem bad_gitea_public "remote_access.gitea_public_url '${gitea_public}' is not a web address." url "$gitea_public"
     return 0
   fi
   if [[ "$gitea_public" != https://* ]]; then
@@ -127,8 +138,10 @@ write_resolved() {
     --argjson local_insecure "$GM_LOCAL_INSECURE" --argjson local_port "$GM_LOCAL_PORT" \
     --arg remote_url "$GM_REMOTE_URL" --arg remote_gitea_url "$GM_REMOTE_GITEA_URL" \
     --argjson remote_port "$GM_REMOTE_PORT" --argjson redirect_uris "$redirects" \
+    --argjson claude_code_port "$CLAUDE_CODE_PORT" \
     --argjson insecure "$GM_IGNORE_TLS" --arg ca_cert "$GM_CA_CERT" \
-    --argjson problems "$(printf '%s\n' "${GM_PROBLEMS[@]}" | jq -R . | jq -sc 'map(select(. != ""))')" '
+    --argjson problems "$(printf '%s\n' "${GM_PROBLEMS[@]}" | jq -R . | jq -sc 'map(select(. != ""))')" \
+    --argjson problem_details "$(printf '%s\n' "${GM_PROBLEM_DETAILS[@]}" | jq -sc 'map(select(. != null))')" '
     {
       app: {hostname: $hostname, version: $version},
       read_only: $read_only,
@@ -143,7 +156,9 @@ write_resolved() {
         mcp_url: (if $remote_url == "" then "" else "\($remote_url)/mcp" end),
         redirect_uris: $redirect_uris
       },
-      problems: $problems
+      claude_code_port: $claude_code_port,
+      problems: $problems,
+      problem_details: $problem_details
     }
   ' >"$RUNTIME_DIR/resolved.json"
 }
@@ -151,6 +166,7 @@ write_resolved() {
 resolve_settings() {
   local identity
   GM_PROBLEMS=()
+  GM_PROBLEM_DETAILS=()
   GM_TOKEN="$(option access_token)"
   GM_READ_ONLY="$(option read_only true)"
   GM_TOOLSETS="$(option_list toolsets)"

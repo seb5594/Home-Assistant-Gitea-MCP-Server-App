@@ -50,6 +50,39 @@ const TEXT = {
     step2Text: 'In claude.ai open Settings → Connectors → Add custom connector. Paste the address, open the advanced settings and enter the client ID.',
     step3: '3. Connect ChatGPT',
     step3Text: 'With developer mode switched on, create a connector with OAuth, the same address and the client ID. ChatGPT shows a callback address of its own: add it as one more redirect URI to the Gitea application.',
+    reason_host_unknown: 'the host name is unknown',
+    reason_refused: 'the connection was refused (is the app started?)',
+    reason_timeout: 'the request timed out',
+    reason_tls: 'the TLS certificate is not trusted (see the advanced options)',
+    reason_failed: 'the connection failed (curl error {rc})',
+    who_cloudflare: 'Cloudflare',
+    who_proxy: 'Something in front of it',
+    how_cut_off: 'cut off ({reason})',
+    how_refused: 'refused with HTTP {http}',
+    m_no_answer: 'The address does not answer: {reason}.',
+    m_blocked: '{who} refuses the request (HTTP {http}). Claude and ChatGPT would be refused the same way: check bot and AI-crawler protection, firewall rules and access policies for this host.',
+    m_wrong_target: 'The public address answers, but not with this app (HTTP {http}). Point the tunnel or proxy at port {port} of this app.',
+    m_http_status: 'The public Gitea address answers with HTTP {http}.',
+    m_login_required: 'Gitea requires a login for everything; add an access token.',
+    m_login_required_note: 'Gitea asks for a sign-in before it shows anything. That is fine for the sign-in of Claude and ChatGPT.',
+    m_not_gitea: '{url} answers, but it does not look like Gitea (HTTP {http}). Check the address.',
+    m_token_rejected: 'Gitea does not accept this access token.',
+    m_token_http: 'The token could not be checked (HTTP {http}).',
+    m_token_unreachable: 'The token could not be checked because Gitea is not reachable.',
+    m_agent_blocked: 'Requests that identify as Claude (User-Agent Claude-User) are {how}, while an ordinary request reaches the app. Bot protection in front of it does this, for example Cloudflare’s blocking of AI crawlers. This test comes from your own network, so it is a hint and not proof: a service may treat a request that only claims to be Claude differently from Claude’s real servers. The security log of your firewall shows what the real requests (from 160.79.104.0/21) got.',
+    m_agent_http: 'Requests from Claude get HTTP {http} instead of the sign-in challenge of this app.',
+    m_root_url: 'Gitea announces its sign-in at {endpoint}. Set ROOT_URL in Gitea to {public}/ so that Claude and ChatGPT are sent to the public address.',
+    m_oauth_http: 'The sign-in address of Gitea answers with HTTP {http}.',
+    m_oauth_no_discovery: 'Gitea does not publish its sign-in addresses (HTTP {http}).',
+    m_no_gitea: 'No Gitea was found. Install the Gitea app, or enter the address of your Gitea in “Gitea address”.',
+    m_bad_gitea_url: 'The Gitea address “{url}” is not a web address. Use the form http://homeassistant.local:3000.',
+    m_bad_public_url: 'The public MCP address “{url}” must look like https://mcp.example.com (HTTPS, no path).',
+    m_need_gitea_public: 'Remote access needs the public address of your Gitea under “Public Gitea address”.',
+    m_bad_gitea_public: 'The public Gitea address “{url}” is not a web address.',
+    m_ca_missing: 'The certificate file “{name}” was not found in the /ssl folder.',
+    step4: '4. Connect Claude Code (optional)',
+    step4Text: 'Claude Code signs in through a small web server on your own computer. Gitea only accepts that return address with its exact port, so the port is fixed. The address with “localhost” is in the list of redirect URIs above. Replace the client ID in the command.',
+    claudeCodeCommand: 'Command for your terminal',
   },
   de: {
     recheck: 'Erneut prüfen',
@@ -99,13 +132,66 @@ const TEXT = {
     step2Text: 'Öffne in claude.ai Einstellungen → Konnektoren → Benutzerdefinierten Konnektor hinzufügen. Füge die Adresse ein, öffne die erweiterten Einstellungen und trage die Client-ID ein.',
     step3: '3. ChatGPT verbinden',
     step3Text: 'Lege bei eingeschaltetem Entwicklermodus einen Konnektor mit OAuth, derselben Adresse und der Client-ID an. ChatGPT zeigt eine eigene Callback-Adresse: Füge sie der Gitea-Anwendung als weitere Weiterleitungs-URI hinzu.',
+    reason_host_unknown: 'der Hostname ist unbekannt',
+    reason_refused: 'die Verbindung wurde abgelehnt (läuft die App?)',
+    reason_timeout: 'die Anfrage hat das Zeitlimit überschritten',
+    reason_tls: 'dem TLS-Zertifikat wird nicht vertraut (siehe Erweitert)',
+    reason_failed: 'die Verbindung ist fehlgeschlagen (curl-Fehler {rc})',
+    who_cloudflare: 'Cloudflare',
+    who_proxy: 'Etwas davor',
+    how_cut_off: 'abgebrochen ({reason})',
+    how_refused: 'mit HTTP {http} abgewiesen',
+    m_no_answer: 'Die Adresse antwortet nicht: {reason}.',
+    m_blocked: '{who} weist die Anfrage ab (HTTP {http}). Claude und ChatGPT würden genauso abgewiesen: Prüfe Bot- und KI-Crawler-Schutz, Firewall-Regeln und Zugriffsrichtlinien für diesen Host.',
+    m_wrong_target: 'Die öffentliche Adresse antwortet, aber nicht mit dieser App (HTTP {http}). Richte den Tunnel oder Proxy auf Port {port} dieser App.',
+    m_http_status: 'Die öffentliche Gitea-Adresse antwortet mit HTTP {http}.',
+    m_login_required: 'Gitea verlangt für alles eine Anmeldung; trage einen Zugriffstoken ein.',
+    m_login_required_note: 'Gitea verlangt eine Anmeldung, bevor es etwas zeigt. Für die Anmeldung von Claude und ChatGPT ist das in Ordnung.',
+    m_not_gitea: '{url} antwortet, sieht aber nicht nach Gitea aus (HTTP {http}). Prüfe die Adresse.',
+    m_token_rejected: 'Gitea akzeptiert diesen Zugriffstoken nicht.',
+    m_token_http: 'Der Token konnte nicht geprüft werden (HTTP {http}).',
+    m_token_unreachable: 'Der Token konnte nicht geprüft werden, weil Gitea nicht erreichbar ist.',
+    m_agent_blocked: 'Anfragen, die sich als Claude ausgeben (User-Agent Claude-User), werden {how}, während eine normale Anfrage die App erreicht. Ein Bot-Schutz davor macht das, zum Beispiel die KI-Crawler-Sperre von Cloudflare. Dieser Test kommt aus deinem eigenen Netz und ist deshalb ein Hinweis, kein Beweis: Ein Dienst kann eine Anfrage, die sich nur als Claude ausgibt, anders behandeln als Claudes echte Server. Das Sicherheitsprotokoll deiner Firewall zeigt, was die echten Anfragen (aus 160.79.104.0/21) bekommen haben.',
+    m_agent_http: 'Anfragen von Claude bekommen HTTP {http} statt der Anmeldeaufforderung dieser App.',
+    m_root_url: 'Gitea kündigt seine Anmeldung unter {endpoint} an. Setze ROOT_URL in Gitea auf {public}/, damit Claude und ChatGPT an die öffentliche Adresse geschickt werden.',
+    m_oauth_http: 'Die Anmelde-Adresse von Gitea antwortet mit HTTP {http}.',
+    m_oauth_no_discovery: 'Gitea veröffentlicht seine Anmelde-Adressen nicht (HTTP {http}).',
+    m_no_gitea: 'Es wurde kein Gitea gefunden. Installiere die Gitea-App oder trage die Adresse deines Gitea unter „Gitea-Adresse“ ein.',
+    m_bad_gitea_url: 'Die Gitea-Adresse „{url}“ ist keine Webadresse. Nutze die Form http://homeassistant.local:3000.',
+    m_bad_public_url: 'Die öffentliche MCP-Adresse „{url}“ muss so aussehen: https://mcp.example.com (HTTPS, kein Pfad).',
+    m_need_gitea_public: 'Der Fernzugriff braucht die öffentliche Adresse deines Gitea unter „Öffentliche Gitea-Adresse“.',
+    m_bad_gitea_public: 'Die öffentliche Gitea-Adresse „{url}“ ist keine Webadresse.',
+    m_ca_missing: 'Die Zertifikatsdatei „{name}“ wurde im Ordner /ssl nicht gefunden.',
+    step4: '4. Claude Code verbinden (optional)',
+    step4Text: 'Claude Code meldet sich über einen kleinen Webserver auf deinem eigenen Rechner an. Gitea akzeptiert diese Rücksprungadresse nur mit genau diesem Port, deshalb ist der Port fest. Die Adresse mit „localhost“ steht oben in der Liste der Weiterleitungs-URIs. Ersetze im Befehl die Client-ID.',
+    claudeCodeCommand: 'Befehl für dein Terminal',
   },
 };
 
-const language = (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
+// German only when the browser prefers German; everything else is English.
+const preferred = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+const language = preferred.toLowerCase().startsWith('de') ? 'de' : 'en';
+document.documentElement.lang = language;
 
 function t(key, ...values) {
   return values.reduce((text, value, index) => text.replace(`{${index}}`, value), TEXT[language][key]);
+}
+
+// fill(template, values): replaces {name} with values.name.
+function fill(template, values = {}) {
+  return template.replace(/\{(\w+)\}/g, (match, name) => (name in values ? values[name] : match));
+}
+
+// explain(entry, fallback): the message of a check or problem in the language of the page.
+// The backend sends a code with arguments next to its English text; unknown codes show the text.
+function explain(entry, fallback = '') {
+  const template = entry && entry.code && TEXT[language][`m_${entry.code}`];
+  if (!template) return fallback || (entry && (entry.error || entry.text)) || '';
+  const args = { ...entry.args };
+  if (args.reason) args.reason = fill(TEXT[language][`reason_${args.reason}`] || args.reason, args);
+  if (args.who) args.who = TEXT[language][`who_${args.who}`] || args.who;
+  if (args.how) args.how = fill(TEXT[language][`how_${args.how}`] || args.how, args);
+  return fill(template, args);
 }
 
 // el(tag, properties, ...children): a small helper that builds DOM nodes without parsing HTML,
@@ -154,7 +240,9 @@ function link(href, text, primary) {
 function renderProblems(status) {
   const banner = document.getElementById('problems');
   banner.hidden = status.problems.length === 0;
-  banner.replaceChildren(el('h2', {}, t('problems')), ...status.problems.map((problem) => el('p', {}, problem)));
+  const details = status.problem_details && status.problem_details.length ? status.problem_details : null;
+  const lines = details ? details.map((problem) => explain(problem)) : status.problems;
+  banner.replaceChildren(el('h2', {}, t('problems')), ...lines.map((line) => el('p', {}, line)));
 }
 
 function giteaRows(status) {
@@ -164,11 +252,11 @@ function giteaRows(status) {
   const source = status.local.source.startsWith('app:') ? 'giteaApp' : 'giteaUrl';
   const rows = [gitea.reachable
     ? row('ok', t('giteaOk', gitea.version || ''), t(source, status.local.url))
-    : row('bad', t('giteaBad'), `${status.local.url}: ${gitea.error}`)];
+    : row('bad', t('giteaBad'), `${status.local.url}: ${explain(gitea)}`)];
 
   if (gitea.token.state === 'ok') rows.push(row('ok', t('tokenOk', gitea.token.login), t('tokenOkDetail')));
   else if (gitea.token.state === 'none') rows.push(row('warn', t('tokenNone'), t('tokenNoneDetail')));
-  else rows.push(row('bad', t('tokenBad'), gitea.token.error));
+  else rows.push(row('bad', t('tokenBad'), explain(gitea.token)));
   return rows;
 }
 
@@ -211,10 +299,10 @@ function renderRemote(status) {
   const checks = remote.checks;
   card.replaceChildren(
     el('h2', {}, t('remote')),
-    checks && row(checks.mcp.ok ? 'ok' : 'bad', t('checkMcp'), checks.mcp.error),
-    checks && row(checks.agent.ok ? 'ok' : 'bad', t('checkAgent'), checks.agent.error),
-    checks && row(checks.gitea.ok ? 'ok' : 'bad', t('checkGitea'), checks.gitea.error || checks.gitea.note),
-    checks && row(checks.oauth.ok ? 'ok' : 'bad', t('checkOauth'), checks.oauth.error),
+    checks && row(checks.mcp.ok ? 'ok' : 'bad', t('checkMcp'), explain(checks.mcp)),
+    checks && row(checks.agent.ok ? 'ok' : 'bad', t('checkAgent'), explain(checks.agent)),
+    checks && row(checks.gitea.ok ? 'ok' : 'bad', t('checkGitea'), checks.gitea.error ? explain(checks.gitea) : explain({ code: checks.gitea.note_code }, checks.gitea.note)),
+    checks && row(checks.oauth.ok ? 'ok' : 'bad', t('checkOauth'), explain(checks.oauth)),
     el('p', { className: 'muted' }, t('checkHint')),
     el('h3', {}, t('step1')),
     el('p', {}, t('step1Text', `${remote.gitea_url}/user/settings/applications`)),
@@ -224,7 +312,11 @@ function renderRemote(status) {
     el('p', {}, t('step2Text')),
     field(t('mcpAddress'), remote.mcp_url),
     el('h3', {}, t('step3')),
-    el('p', {}, t('step3Text')));
+    el('p', {}, t('step3Text')),
+    el('h3', {}, t('step4')),
+    el('p', {}, t('step4Text')),
+    field(t('claudeCodeCommand'),
+      `claude mcp add --transport http gitea ${remote.mcp_url} --client-id <client-id> --callback-port ${status.claude_code_port}`, 3));
 }
 
 function render(status) {
