@@ -292,7 +292,7 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
   # A bot protection that refuses Claude after the sign-in worked, as Cloudflare does for Claude-User.
   # shellcheck disable=SC2329  # replaces the library function
   http_get() {
-    # shellcheck disable=SC2034
+    # shellcheck disable=SC2034,SC2317  # read by the library; older shellchecks call this unreachable
     CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
   }
   result="$(probe_agent_access https://mcp.example.com false "")"
