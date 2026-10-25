@@ -1,4 +1,4 @@
-# Gitea MCP Server
+# Gitea MCP-Server
 
 Lets AI assistants work with your own Gitea: search repositories, read files, and look at or
 write issues, pull requests, releases and more. The app runs the official

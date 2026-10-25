@@ -124,6 +124,14 @@ pass 'gitea-mcp starts on this architecture'
 for script in "$LIB"/*.sh "$RECHECK"; do bash -n "$script"; done
 pass 'the shell libraries parse'
 
+# The start script runs with "set -u". A setting it reads and the libraries never assign stops the
+# app at the first line, which the unit tests below cannot see: check the names.
+SERVICE_RUN="${SERVICE_RUN:-/etc/s6-overlay/s6-rc.d/gitea-mcp-server/run}"
+while read -r name; do
+  grep -qE "^[[:space:]]*${name}=" "$LIB/settings.sh" || fail "the start script reads ${name}, which nothing assigns"
+done < <(grep -o 'GM_[A-Z_]*' "$SERVICE_RUN" | sort -u)
+pass 'every setting the start script reads is assigned by the libraries'
+
 # ---- option handling ------------------------------------------------------------------------
 
 options '{"gitea_url": ""}'

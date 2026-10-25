@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-dev12
+
+* The app is now called "Gitea MCP-Server".
+* Fix the app stopping at start with "GM_LOCAL_INSECURE: unbound variable" (dev10 and dev11).
+
 ## 1.0.0-dev11
 
 * The app page no longer shows an empty version when Gitea hides it from visitors without a token.

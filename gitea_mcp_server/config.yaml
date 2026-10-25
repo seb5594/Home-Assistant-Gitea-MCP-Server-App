@@ -1,6 +1,6 @@
-name: Gitea MCP Server
+name: Gitea MCP-Server
 description: Lets Assist, Claude, ChatGPT and other AI agents work with your Gitea repositories, issues and pull requests through the Model Context Protocol.
-version: "1.0.0-dev11"
+version: "1.0.0-dev12"
 slug: gitea_mcp_server
 stage: experimental
 init: false
