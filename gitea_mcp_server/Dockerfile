@@ -8,7 +8,10 @@ FROM docker.io/gitea/gitea-mcp-server:${GITEA_MCP_VERSION} AS gitea-mcp
 
 FROM ${BUILD_FROM}
 
+# Alpine's busybox is built without the httpd applet; busybox-extras brings it (app page).
 RUN apk add --no-cache \
+    # renovate: datasource=repology depName=alpine_3_24/busybox-extras
+    busybox-extras=1.37.0-r31 \
     # renovate: datasource=repology depName=alpine_3_24/curl
     curl=8.22.0-r0 \
     # renovate: datasource=repology depName=alpine_3_24/jq
