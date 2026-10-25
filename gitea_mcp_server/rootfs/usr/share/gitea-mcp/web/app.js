@@ -292,7 +292,7 @@ function renderRemote(status) {
     card.replaceChildren(
       el('h2', {}, t('remote')),
       el('p', {}, t('remoteOff')),
-      link('https://my.home-assistant.io/redirect/supervisor_addon/?addon=gitea_mcp_server', t('openConfig')));
+      link(`https://my.home-assistant.io/redirect/supervisor_addon/?addon=${status.app.hostname.replace(/-/g, '_')}`, t('openConfig')));
     return;
   }
 
