@@ -63,7 +63,7 @@ log_status() {
   esac
 
   if [[ "$(jq -r '.remote.public_url' "$status")" != "" ]]; then
-    jq -r '.remote.checks | select(.mcp.ok == false) | .mcp.error' "$status" | while read -r line; do log_warning "$line"; done
-    jq -r '.remote.checks | select(.gitea.ok == false) | .gitea.error' "$status" | while read -r line; do log_warning "$line"; done
+    jq -r '.remote.checks | [.mcp.error, .gitea.error, .oauth.error] | .[] | select(. != "")' "$status" \
+      | while read -r line; do log_warning "$line"; done
   fi
 }

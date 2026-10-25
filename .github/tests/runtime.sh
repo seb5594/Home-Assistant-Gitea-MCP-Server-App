@@ -47,7 +47,8 @@ wait_for() {
   fail "$1 did not come up"
 }
 
-# ---- fixtures: Supervisor on 18080, Gitea on 3000 (any token) and 3001 (needs a login) --------
+# ---- fixtures: Supervisor on 18080; Gitea on 3000 (any token), 3001 (needs a login),
+# ---- 3002 (everything behind a gate) and 3003 (announces a wrong ROOT_URL) -----------------
 
 mkdir -p "$fixture"/supervisor/addons/{db21ed7f_gitea,self} "$fixture"/gitea/api/v1 "$fixture"/gitea-locked/api/v1
 cat >"$fixture/supervisor/addons/db21ed7f_gitea/info" <<'JSON'
@@ -62,9 +63,25 @@ echo '{"version":"1.24.0"}' >"$fixture/gitea-locked/api/v1/version"
 echo '{"login":"nobody"}' >"$fixture/gitea-locked/api/v1/user"
 printf '/api/v1/user:user:secret\n' >"$fixture/locked.conf" # answers 401 to a token header
 
+# What Gitea publishes for the sign-in of Claude and ChatGPT; the token endpoint answers in JSON.
+# openid_configuration <port> <host>
+openid_configuration() {
+  printf '{"issuer":"http://%s/","authorization_endpoint":"http://%s/login/oauth/authorize","token_endpoint":"http://%s/cgi-bin/token"}\n' "$2" "$2" "$2" >"$fixture/$1/.well-known/openid-configuration"
+}
+mkdir -p "$fixture"/gitea/{.well-known,cgi-bin} "$fixture"/gitea-gated/api/v1 "$fixture"/gitea-moved/{api/v1,.well-known,cgi-bin}
+openid_configuration gitea 127.0.0.1:3000
+printf '#!/bin/sh\nprintf "Status: 400 Bad Request\\r\\nContent-Type: application/json\\r\\n\\r\\n{\\"error\\":\\"unsupported_grant_type\\"}\\n"\n' >"$fixture/gitea/cgi-bin/token"
+chmod +x "$fixture/gitea/cgi-bin/token"
+echo '{"version":"1.24.0"}' >"$fixture/gitea-gated/api/v1/version"
+printf '/:user:secret\n' >"$fixture/gated.conf" # a gate in front of everything: answers 401 with a web page
+echo '{"version":"1.24.0"}' >"$fixture/gitea-moved/api/v1/version"
+openid_configuration gitea-moved homeassistant.local:3000
+
 serve "$fixture/supervisor" 18080
 serve "$fixture/gitea" 3000
 serve "$fixture/gitea-locked" 3001 "$fixture/locked.conf"
+serve "$fixture/gitea-gated" 3002 "$fixture/gated.conf"
+serve "$fixture/gitea-moved" 3003
 wait_for http://127.0.0.1:18080/addons/self/info
 wait_for http://127.0.0.1:3000/api/v1/version
 
@@ -241,10 +258,33 @@ expect_equal 'unauthenticated MCP request' 401 "$status"
   result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3000 false "")"
   expect_equal 'public MCP check' true "$(jq -r .mcp.ok <<<"$result")"
   expect_equal 'public Gitea check' true "$(jq -r .gitea.ok <<<"$result")"
+  expect_equal 'Gitea sign-in check' true "$(jq -r .oauth.ok <<<"$result")"
   result="$(probe_remote http://127.0.0.1:18183 http://127.0.0.1:3000 false "")"
   expect_equal 'wrong target' false "$(jq -r .mcp.ok <<<"$result")"
 )
 pass 'the remote server asks for OAuth and the remote checks recognise it'
+
+(
+  settings
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3002 false "")"
+  expect_equal 'gated Gitea' false "$(jq -r .gitea.ok <<<"$result")"
+  [[ "$(jq -r .gitea.error <<<"$result")" == *'refuses the request (HTTP 401)'* ]] || fail 'a gate in front of Gitea is not named'
+  expect_equal 'gated sign-in' false "$(jq -r .oauth.ok <<<"$result")"
+
+  result="$(probe_remote http://127.0.0.1:18184 http://127.0.0.1:3003 false "")"
+  expect_equal 'moved Gitea sign-in' false "$(jq -r .oauth.ok <<<"$result")"
+  [[ "$(jq -r .oauth.error <<<"$result")" == *ROOT_URL* ]] || fail 'a wrong ROOT_URL is not named'
+
+  # Gitea itself answers a refusal in JSON; a gate in front of it sends a web page.
+  # shellcheck disable=SC2034  # read by is_blocked and describe_block
+  HTTP_CODE=403 HTTP_BODY='{"message":"Only signed in user is allowed to call APIs."}'
+  if is_blocked; then fail 'a JSON refusal of Gitea counts as blocked'; fi
+  # shellcheck disable=SC2034
+  HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
+  is_blocked || fail 'a web page refusal does not count as blocked'
+  [[ "$(describe_block)" == Cloudflare* ]] || fail 'Cloudflare is not named'
+)
+pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirement of Gitea itself'
 
 # ---- app page -------------------------------------------------------------------------------
 

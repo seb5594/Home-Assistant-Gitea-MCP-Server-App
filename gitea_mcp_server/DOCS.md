@@ -182,7 +182,31 @@ messages.
 | *remote_access.public_url must look like https://…* | HTTPS only, no path, for example `https://mcp.example.com`. |
 | *The public address answers, but not with this app* | The tunnel or proxy points at the wrong place. It has to forward to port 8081 of this app. |
 | *The public address does not answer* | The tunnel is down, DNS is missing, or your router does not loop requests back. If the connector works from outside, ignore this. |
+| *refuses the request (HTTP 403)*, *Cloudflare refuses…* | Something in front of Gitea or of this app turns requests away that are not a person in a browser. See [Connection failed after signing in](#connection-failed-after-signing-in). |
+| *Gitea announces its sign-in at …* | Gitea builds its sign-in addresses from `ROOT_URL`. Set it to your public Gitea address, with a trailing slash. In the Gitea app this is the `ROOT_URL` option. |
+| *Gitea asks for a sign-in before it shows anything* | Not a problem. Gitea runs with `REQUIRE_SIGNIN_VIEW`, and the sign-in of Claude and ChatGPT works with it. |
 | claude.ai or ChatGPT shows an error while signing in | The redirect URI is missing in the Gitea application, or Gitea is not reachable from the internet. |
+| claude.ai says the connection failed after the Gitea window | See below. |
+
+### Connection failed after signing in
+
+The Gitea window is your browser talking to Gitea. After it, the servers of claude.ai or ChatGPT
+take over: they fetch a token from Gitea and then call this app. If your browser gets through but
+they do not, the cause is almost always something that turns away automated visitors, in front
+of Gitea or in front of this app:
+
+* **Cloudflare:** bot protection (*Bot Fight Mode*, *Block AI bots*, *AI Crawl Control*), WAF
+  rules, or an *Access* policy on one of the two host names. Open **Security → Events** in
+  Cloudflare right after a failed attempt; blocked requests from Anthropic's or OpenAI's servers
+  show up there. Allow them for both host names, for example with a WAF skip rule; Anthropic
+  publishes its [address ranges](https://platform.claude.com/docs/en/api/ip-addresses).
+* **Another proxy or firewall** with geo blocking or rate limits.
+* **`ROOT_URL`** of Gitea pointing to an internal address, see above.
+
+The checks on the app page look at the same things from your side, so a red check there points
+to the host name to look at. To see whether a request reaches the app at all, switch on
+**Debug logging**, try again and look for requests to Gitea in the log; without any, the call
+never arrived.
 
 ## Credits
 
