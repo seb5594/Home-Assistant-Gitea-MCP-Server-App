@@ -253,7 +253,7 @@ expect_equal 'unauthenticated MCP request' 401 "$status"
   expect_equal 'public Gitea check' true "$(jq -r .gitea.ok <<<"$result")"
   expect_equal 'Gitea sign-in check' true "$(jq -r .oauth.ok <<<"$result")"
   expect_equal 'requests as AI agents' true "$(jq -r .agent.ok <<<"$result")"
-  expect_equal 'every agent was tried' 5 "$(jq -r '.agent.agents | length' <<<"$result")"
+  expect_equal 'every agent was tried' 4 "$(jq -r '.agent.agents | length' <<<"$result")"
   result="$(probe_remote http://127.0.0.1:18183 http://127.0.0.1:3000 false)"
   expect_equal 'wrong target' false "$(jq -r .mcp.ok <<<"$result")"
 )
@@ -289,9 +289,9 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
   # shellcheck disable=SC2034,SC2317,SC2329
   http_get() {
     CURL_RC=0 HTTP_CODE=401 HTTP_BODY='authorization required' HTTP_HEADERS=$'HTTP/2 401\r\nwww-authenticate: Bearer resource_metadata="x"'
-    if [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User/1.0" && "$BLOCK_MODE" == "page" ]]; then
+    if [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User" && "$BLOCK_MODE" == "page" ]]; then
       CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
-    elif [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User/1.0" && "$BLOCK_MODE" == "reset" ]]; then
+    elif [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User" && "$BLOCK_MODE" == "reset" ]]; then
       CURL_RC=92 HTTP_CODE=000 HTTP_BODY="" HTTP_HEADERS=""
     fi
   }
@@ -301,7 +301,7 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
     expect_equal "summary code ($BLOCK_MODE)" agents_blocked "$(jq -r .code <<<"$result")"
     expect_equal "only ChatGPT is named ($BLOCK_MODE)" chatgpt "$(jq -r '[.agents[] | select(.ok | not) | .id] | join(",")' <<<"$result")"
     expect_equal "Claude passes ($BLOCK_MODE)" true "$(jq -r '.agents[] | select(.id == "claude") | .ok' <<<"$result")"
-    [[ "$(jq -r '.agents[] | select(.id == "chatgpt") | .error' <<<"$result")" == *'identify as ChatGPT'* ]] \
+    [[ "$(jq -r '.agents[] | select(.id == "chatgpt") | .error' <<<"$result")" == *'only claims to be ChatGPT'* ]] \
       || fail "the refusal is not explained ($BLOCK_MODE)"
   done
   expect_equal 'how the page refused' refused "$(BLOCK_MODE=page probe_agent_access https://mcp.example.com false | jq -r '.agents[] | select(.id == "chatgpt") | .args.how')"

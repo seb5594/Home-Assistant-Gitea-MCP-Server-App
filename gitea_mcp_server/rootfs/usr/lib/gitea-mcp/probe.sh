@@ -161,13 +161,12 @@ probe_gitea() {
 }
 
 # The AI services that call the public MCP address, as id|name|User-Agent. Bot protection in front
-# of the app decides by the User-Agent, so each one is tried with the one it is known by. The
-# strings are the ones seen in the wild; a service may change them.
+# of the app decides by the User-Agent, so each one is tried with the name it is known by. The
+# names are the ones the services document or that were seen in logs; a service may change them.
 AGENTS=(
   "claude|Claude (claude.ai)|Claude-User"
   "claude_signin|Claude (sign-in step)|python-httpx/0.28.1"
-  "chatgpt|ChatGPT|ChatGPT-User/1.0"
-  "openai|ChatGPT (connector API)|openai-mcp/1.0.0"
+  "chatgpt|ChatGPT|ChatGPT-User"
   "claude_code|Claude Code|claude-code/2.1.0 (cli)"
 )
 
@@ -193,7 +192,7 @@ probe_agent() {
     else
       how="refused"
     fi
-    set_error agent agent_blocked "Requests that identify as ${name} (User-Agent ${agent}) do not reach the app: $([[ "$how" == cut_off ]] && printf 'the connection is cut off (%s)' "$(describe_failure)" || printf 'refused with HTTP %s' "$HTTP_CODE")." \
+    set_error agent agent_blocked "A request that only claims to be ${name} (User-Agent ${agent}) is $([[ "$how" == cut_off ]] && printf 'cut off (%s)' "$(describe_failure)" || printf 'refused with HTTP %s' "$HTTP_CODE"), while an ordinary request reaches the app. That is usually bot protection, for example Cloudflare: it lets the real service in by its address and turns look-alikes away. If ${name} connects, ignore this." \
       name "$name" agent "$agent" how "$how" http "$HTTP_CODE" reason "$(failure_reason)" rc "$CURL_RC"
   fi
   jq -nc --arg id "$id" --arg name "$name" --argjson ok "$ok" --arg error "$agent_error" --argjson msg "$agent_msg" '
@@ -206,8 +205,9 @@ probe_agent() {
 # protection in front of the app often refuses or cuts off exactly one of them after the sign-in
 # worked. Each is tried here with its name. An ordinary request first shows that the app can be
 # reached at all; without it a blocked agent could not be told from an address that is down.
-# The test comes from your own network, so it is a hint and not proof: a service may treat a
-# request that only claims to be Claude differently from Claude's real servers.
+# The test comes from your own network, so it is a hint and not proof: bot protection often lets
+# the real services in by their address (ChatGPT passes although a request from here with its
+# name is refused) and turns away requests that only claim to be them.
 # {"ok", "error", "code", "args", "agents": [{"id", "name", "ok", "error", "code", "args"}]}
 probe_agent_access() {
   local mcp_url="$1" insecure="$2"
@@ -223,7 +223,7 @@ probe_agent_access() {
     if ((blocked == 0)); then
       ok=true
     else
-      set_error control agents_blocked "${blocked} AI service(s) are refused or cut off while an ordinary request reaches the app. Bot protection in front of the app does this, for example Cloudflare's blocking of AI crawlers. The security log of your firewall shows what the real requests got." count "$blocked"
+      set_error control agents_blocked "${blocked} test request(s) that only claim to be an AI service are refused or cut off, while an ordinary request reaches the app. The real services may still get through; the security log of your firewall shows what their requests got." count "$blocked"
     fi
   elif [[ "$HTTP_CODE" == "000" ]]; then
     no_answer_error control

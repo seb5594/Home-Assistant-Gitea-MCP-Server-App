@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0-dev13
+
+* ChatGPT is tried with its documented name ChatGPT-User. The tests for AI services are hints now
+  and no longer count against a client: Cloudflare lets the real services in by their address, so
+  ChatGPT could be refused in the test and still connect.
+* New order of the tabs: Home Assistant, Claude Code, claude.ai, ChatGPT, other agents, remote access.
+* The tab for other agents shows the address for apps on Home Assistant OS, for other machines in
+  your network and for the internet, and describes Home Assistant's own MCP server (address, port,
+  path, sign-in).
+* The official Gitea logo with the name of the app as icon and logo. The license is MIT.
+
 ## 1.0.0-dev12
 
 * The app is now called "Gitea MCP-Server".
