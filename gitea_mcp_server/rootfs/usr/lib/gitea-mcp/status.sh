@@ -9,7 +9,7 @@
 # Runs the checks and replaces status.json atomically. Prints the new status.
 refresh_status() {
   local resolved="$RUNTIME_DIR/resolved.json"
-  local token local_url remote_url ca_cert insecure local_insecure scratch
+  local token local_url remote_url insecure local_insecure scratch
   local gitea_check='null' remote_check='null' has_token=false
 
   [[ -f "$resolved" ]] || { log_error "No resolved settings yet."; return 1; }
@@ -21,13 +21,12 @@ refresh_status() {
   local_insecure="$(jq -r '.local.insecure' "$resolved")"
   remote_url="$(jq -r '.remote.public_url' "$resolved")"
   insecure="$(jq -r '.remote.insecure' "$resolved")"
-  ca_cert="$(jq -r '.ca_cert' "$resolved")"
 
   if [[ -n "$local_url" ]]; then
-    gitea_check="$(probe_gitea "$local_url" "$local_insecure" "$ca_cert" "$token")"
+    gitea_check="$(probe_gitea "$local_url" "$local_insecure" "$token")"
   fi
   if [[ -n "$remote_url" ]]; then
-    remote_check="$(probe_remote "$remote_url" "$(jq -r '.remote.gitea_url' "$resolved")" "$insecure" "$ca_cert")"
+    remote_check="$(probe_remote "$remote_url" "$(jq -r '.remote.gitea_url' "$resolved")" "$insecure")"
   fi
 
   scratch="$(mktemp "$RUNTIME_DIR/status.XXXXXX")"
@@ -63,7 +62,7 @@ log_status() {
   esac
 
   if [[ "$(jq -r '.remote.public_url' "$status")" != "" ]]; then
-    jq -r '.remote.checks | [.mcp.error, .agent.error, .gitea.error, .oauth.error] | .[] | select(. != "")' "$status" \
+    jq -r '.remote.checks | [.mcp.error, .agent.error, (.agent.agents[]?.error), .gitea.error, .oauth.error] | .[] | select(. != "")' "$status" \
       | while read -r line; do log_warning "$line"; done
   fi
 }

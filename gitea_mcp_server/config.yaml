@@ -1,6 +1,6 @@
 name: Gitea MCP Server
-description: Lets Assist, Claude and ChatGPT work with your Gitea repositories, issues and pull requests through the Model Context Protocol.
-version: "1.0.0-dev9"
+description: Lets Assist, Claude, ChatGPT and other AI agents work with your Gitea repositories, issues and pull requests through the Model Context Protocol.
+version: "1.0.0-dev10"
 slug: gitea_mcp_server
 stage: experimental
 init: false
@@ -8,23 +8,18 @@ arch:
   - amd64
   - aarch64
 url: https://github.com/seb5594/Home-Assistant-Gitea-MCP-Server-App
-hassio_api: true
-hassio_role: default
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:source-branch
 panel_title: Gitea MCP
-map:
-  - type: ssl
-    read_only: true
 ports:
   8080/tcp: null
   8081/tcp: null
 ports_description:
   8080/tcp: Local MCP endpoint with the configured access token. Leave closed unless a client outside Home Assistant needs it.
-  8081/tcp: Remote MCP endpoint for claude.ai and ChatGPT (OAuth). Normally reached through a tunnel or reverse proxy instead.
+  8081/tcp: Remote MCP endpoint for AI services such as claude.ai and ChatGPT (OAuth). Normally reached through a tunnel or reverse proxy instead.
 options:
-  gitea_url: ""
+  gitea_url: "http://db21ed7f-gitea:3000"
   access_token: ""
   read_only: true
   toolsets: []
@@ -32,7 +27,6 @@ options:
     public_url: ""
     gitea_public_url: ""
   advanced:
-    ca_certificate: ""
     ignore_certificate_errors: false
     debug_logging: false
 schema:
@@ -45,6 +39,5 @@ schema:
     public_url: str?
     gitea_public_url: str?
   advanced:
-    ca_certificate: str?
     ignore_certificate_errors: bool
     debug_logging: bool

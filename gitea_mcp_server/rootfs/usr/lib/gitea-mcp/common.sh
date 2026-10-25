@@ -7,6 +7,8 @@
 
 OPTIONS_FILE="${OPTIONS_FILE:-/data/options.json}"
 RUNTIME_DIR="${RUNTIME_DIR:-/run/gitea-mcp}"
+# The image records its own version here (see the Dockerfile).
+VERSION_FILE="${VERSION_FILE:-/etc/gitea-mcp/version}"
 
 declare -F log_info >/dev/null || log_info() { printf '[INFO] %s\n' "$*" >&2; }
 declare -F log_warning >/dev/null || log_warning() { printf '[WARNING] %s\n' "$*" >&2; }
@@ -65,4 +67,12 @@ set_error() {
   shift
   printf -v "${name}_error" '%s' "$2"
   printf -v "${name}_msg" '%s' "$(message "$@")"
+}
+
+# own_app_info
+# {"hostname", "version"} of this app. The host name is also the address under which other apps
+# reach this one, and the slug with dashes for underscores.
+own_app_info() {
+  jq -nc --arg hostname "$(hostname)" --arg version "$(cat "$VERSION_FILE" 2>/dev/null || echo unknown)" \
+    '{hostname: $hostname, version: $version}'
 }

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.0-dev10
+
+* **Less access.** The app no longer asks for the Supervisor API or the `ssl` folder. It cannot see
+  your other apps, entities or files. The address of the Gitea app (`http://db21ed7f-gitea:3000`) is
+  the default of `gitea_url` instead of being detected. The option `advanced.ca_certificate` is gone;
+  use `ignore_certificate_errors` for a self-signed Gitea in your own network.
+* **New app page.** Tabs for the overview, Home Assistant (Assist), remote access, claude.ai,
+  ChatGPT, Claude Code and other agents, with step-by-step instructions and a lighter blue style.
+  No assistant is optional or privileged any more: you connect what you use.
+* The check for AI services tries Claude, the Claude sign-in step, Claude Code and two ChatGPT names
+  one by one and shows which one bot protection turns away.
+* The OAuth application is called *AI assistants (MCP)*. The ChatGPT callback address
+  (`https://chatgpt.com/connector/oauth/<value>`) is different for every connector: the old fixed
+  one is gone from the list, and the ChatGPT tab explains how to add yours.
+* Full documentation, including Assist, tool groups, security and Home Assistant's own MCP server.
+
 ## 1.0.0-dev9
 
 * "Open app configuration" on the app page now opens the configuration of this app (it used a

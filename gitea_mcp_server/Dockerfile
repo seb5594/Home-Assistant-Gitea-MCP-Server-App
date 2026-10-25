@@ -33,8 +33,9 @@ RUN chmod a+x /usr/lib/gitea-mcp/*.sh /usr/share/gitea-mcp/web/cgi-bin/* \
     && mkdir -p /run/gitea-mcp \
     && ln -s /run/gitea-mcp/status.json /usr/share/gitea-mcp/web/status.json
 
-ARG BUILD_VERSION=1.0.0-dev9
+ARG BUILD_VERSION=1.0.0-dev10
 ARG BUILD_ARCH=amd64
+RUN echo "${BUILD_VERSION}" >/etc/gitea-mcp/version
 LABEL io.hass.version="${BUILD_VERSION}" \
     io.hass.type="addon" \
     io.hass.arch="${BUILD_ARCH}" \
