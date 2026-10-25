@@ -5,7 +5,7 @@ set -Eeuo pipefail
 # the app's libraries; the real gitea-mcp binary is started and asked for its tools over MCP.
 LIB="${LIB_DIR:-/usr/lib/gitea-mcp}"
 RECHECK="${RECHECK_CGI:-/usr/share/gitea-mcp/web/cgi-bin/recheck}"
-read -r -a HTTPD <<<"${HTTPD_COMMAND:-busybox httpd}"
+read -r -a HTTPD <<<"${HTTPD_COMMAND:-busybox-extras httpd}"
 
 fixture=$(mktemp -d)
 pids=()
