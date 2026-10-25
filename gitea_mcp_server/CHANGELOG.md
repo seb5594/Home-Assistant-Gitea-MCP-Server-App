@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-dev5
+
+* Fixed: the app stopped right after start when a connection check got no answer, for example
+  when the public address is blocked (`jq: invalid JSON text passed to --argjson`, exit code 2).
+  The Supervisor starts services with strict shell options, in which a failing `curl` ended the
+  checks. They now keep curl's exit code and answer in every case. The runtime test runs with the
+  same options, so this cannot return unnoticed.
+
 ## 1.0.0-dev4
 
 * The Claude-User check also recognises a connection that is cut off instead of answered (the

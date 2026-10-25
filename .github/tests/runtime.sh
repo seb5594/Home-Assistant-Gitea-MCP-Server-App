@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# bashio starts the services with the same strictness; a library that only works without it fails
+# in Home Assistant, not here.
+shopt -s inherit_errexit
 
 # Runs inside the built image (release pipeline). A mocked Supervisor and a mocked Gitea answer
 # the app's libraries; the real gitea-mcp binary is started and asked for its tools over MCP.
@@ -310,6 +313,17 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
   result="$(BLOCK_MODE=none probe_agent_access https://mcp.example.com false "")"
   expect_equal 'nothing in the way' true "$(jq -r .ok <<<"$result")"
 )
+
+(
+  settings
+  # A real failing connection: curl ends with an error code and the probes must still answer in JSON.
+  result="$(probe_agent_access http://127.0.0.1:9 false "")"
+  expect_equal 'no answer at all' false "$(jq -r .ok <<<"$result")"
+  [[ "$(jq -r .error <<<"$result")" == *'does not answer'* ]] || fail 'a closed port is not reported'
+  result="$(probe_remote http://127.0.0.1:9 http://127.0.0.1:9 false "")"
+  expect_equal 'remote checks without any answer' false "$(jq -r .mcp.ok <<<"$result")"
+)
+pass 'probes keep answering in JSON when a connection fails'
 pass 'a block of requests that identify as Claude is reported, whether refused or cut off'
 
 # ---- app page -------------------------------------------------------------------------------
