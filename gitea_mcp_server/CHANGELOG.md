@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-dev6
+
+* The Claude-User check now says that it comes from your own network and only claims to be
+  Claude, so a block there is a hint and not proof; the documentation explains how to read the
+  firewall log for the real requests.
+
 ## 1.0.0-dev5
 
 * Fixed: the app stopped right after start when a connection check got no answer, for example

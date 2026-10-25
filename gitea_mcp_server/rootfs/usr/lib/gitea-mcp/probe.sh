@@ -134,7 +134,7 @@ probe_agent_access() {
 
     HTTP_METHOD=POST HTTP_USER_AGENT="" http_get "${mcp_url}/mcp" "$insecure" "$ca_file"
     if [[ "$HTTP_CODE" == "401" ]] && grep -qi '^www-authenticate: *bearer' <<<"$HTTP_HEADERS"; then
-      error="Requests that identify as Claude (User-Agent Claude-User) are ${agent_reason}, while an ordinary request reaches the app. Bot protection in front of it does this, for example Cloudflare's blocking of AI crawlers. Allow Claude-User there; Claude would otherwise sign in and then fail to connect."
+      error="Requests that identify as Claude (User-Agent Claude-User) are ${agent_reason}, while an ordinary request reaches the app. Bot protection in front of it does this, for example Cloudflare's blocking of AI crawlers. This test comes from your own network, so it is a hint and not proof: a service may treat a request that only claims to be Claude differently from Claude's real servers. The security log of your firewall shows what the real requests (from 160.79.104.0/21) got."
     elif [[ "$HTTP_CODE" == "000" ]]; then
       error="The public address does not answer: $(describe_failure)."
     elif is_blocked; then
