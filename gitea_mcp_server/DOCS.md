@@ -210,7 +210,9 @@ the name Claude introduces itself with.
 With **Cloudflare**, look at these places for both host names (Gitea and this app):
 
 * *Security → Settings*: bot protection (*Bot Fight Mode*, *Block AI bots*).
-* *AI Crawl Control*: it has a setting for each crawler, including `Claude-User`.
+* *AI Crawl Control*: it has a setting for each crawler. `Claude-User` is a separate entry from
+  `ClaudeBot` and may be listed under another category (assistant instead of crawler), so clear
+  any filter and search for `Claude-User`. Letting `ClaudeBot` through is not enough.
 * *Security → Events*: blocked requests show up here right after a failed attempt.
 * A WAF rule that skips other rules does not necessarily switch these settings off. Allow
   `Claude-User` in the setting itself, or turn the setting off for the two host names.
