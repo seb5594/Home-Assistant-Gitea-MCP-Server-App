@@ -65,7 +65,7 @@ start_servers() {
   : >"${RUNTIME_DIR}/ports"
 
   if [[ -n "$GM_LOCAL_URL" ]]; then
-    launch_server local "$GM_LOCAL_PORT" "$GM_LOCAL_INSECURE" \
+    launch_server local "$GM_LOCAL_PORT" "$GM_IGNORE_TLS" \
       GITEA_HOST="$GM_LOCAL_URL" GITEA_ACCESS_TOKEN="$GM_TOKEN"
   fi
   if [[ -n "$GM_REMOTE_URL" ]]; then
@@ -119,7 +119,7 @@ idle() {
 }
 
 main() {
-  log_info "Starting Gitea MCP Server"
+  log_info "Starting Gitea MCP-Server"
   resolve_settings
   start_servers
   if ((${#PIDS[@]} == 0)); then

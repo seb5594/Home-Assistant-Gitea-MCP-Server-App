@@ -64,7 +64,7 @@ const TEXT = {
     assistStep1Text: 'Add the “Model Context Protocol” integration and enter this address. It is the local address, which works with the access token of the app.',
     addIntegration: 'Add integration',
     assistStep2: 'Give your assistant the tools',
-    assistStep2Text: 'Open Settings → Voice assistants, select your assistant and open the settings of its conversation agent. Under “Control Home Assistant” enable the entry named after the integration (usually “Gitea MCP Server” or the name you gave it). The conversation agent must support tools, for example the OpenAI, Anthropic, Google or Ollama integrations. The built-in Assist agent without a language model does not.',
+    assistStep2Text: 'Open Settings → Voice assistants, select your assistant and open the settings of its conversation agent. Under “Control Home Assistant” enable the entry named after the integration (usually “Gitea MCP-Server” or the name you gave it). The conversation agent must support tools, for example the OpenAI, Anthropic, Google or Ollama integrations. The built-in Assist agent without a language model does not.',
     assistStep3: 'Try it',
     assistStep3Text: 'Ask in a chat with the assistant: “List the open issues of owner/repository.” or “Show the latest commits of the main branch.” If nothing happens, check that Gitea is reachable on the Overview tab.',
     assistTips: 'Tips',
@@ -235,7 +235,7 @@ const TEXT = {
     assistStep1Text: 'Füge die Integration „Model Context Protocol“ hinzu und trage diese Adresse ein. Es ist die lokale Adresse, sie arbeitet mit dem Zugriffstoken der App.',
     addIntegration: 'Integration hinzufügen',
     assistStep2: 'Dem Assistenten die Werkzeuge geben',
-    assistStep2Text: 'Öffne Einstellungen → Sprachassistenten, wähle deinen Assistenten und öffne die Einstellungen seines Konversationsagenten. Aktiviere unter „Home Assistant steuern“ den Eintrag, der nach der Integration benannt ist (meist „Gitea MCP Server“ oder der Name, den du vergeben hast). Der Konversationsagent muss Werkzeuge unterstützen, zum Beispiel die Integrationen OpenAI, Anthropic, Google oder Ollama. Der eingebaute Assist-Agent ohne Sprachmodell kann das nicht.',
+    assistStep2Text: 'Öffne Einstellungen → Sprachassistenten, wähle deinen Assistenten und öffne die Einstellungen seines Konversationsagenten. Aktiviere unter „Home Assistant steuern“ den Eintrag, der nach der Integration benannt ist (meist „Gitea MCP-Server“ oder der Name, den du vergeben hast). Der Konversationsagent muss Werkzeuge unterstützen, zum Beispiel die Integrationen OpenAI, Anthropic, Google oder Ollama. Der eingebaute Assist-Agent ohne Sprachmodell kann das nicht.',
     assistStep3: 'Ausprobieren',
     assistStep3Text: 'Frag in einem Chat mit dem Assistenten: „Liste die offenen Issues von Besitzer/Repository auf.“ oder „Zeig die letzten Commits des Hauptzweigs.“ Passiert nichts, prüfe auf der Übersicht, ob Gitea erreichbar ist.',
     assistTips: 'Tipps',
@@ -693,6 +693,6 @@ async function recheck() {
 
 document.getElementById('recheck').textContent = t('recheck');
 document.getElementById('recheck').addEventListener('click', recheck);
-document.title = 'Gitea MCP Server';
+document.title = 'Gitea MCP-Server';
 buildTabs();
 load();

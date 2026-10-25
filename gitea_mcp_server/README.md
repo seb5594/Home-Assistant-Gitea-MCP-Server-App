@@ -1,4 +1,4 @@
-# Gitea MCP Server
+# Gitea MCP-Server
 
 Lets Assist, Claude, ChatGPT and other AI agents work with your own Gitea: search repositories,
 read files, and look at or write issues and pull requests.
