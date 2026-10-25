@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0-dev2
+
+* The checks for remote access tell apart Gitea's own sign-in requirement (shown as fine) from a
+  firewall, bot protection or access gate in front of Gitea or the app, and name Cloudflare when
+  it is the one answering. Before, `REQUIRE_SIGNIN_VIEW` showed up as an error.
+* New check: Gitea's sign-in addresses are announced with the public address and answer from the
+  internet. A wrong `ROOT_URL` is reported with the value to set.
+* Documentation: what to look at when claude.ai or ChatGPT report a failed connection after the
+  Gitea sign-in.
+
 ## 1.0.0-dev1
 
 First pre-release.
