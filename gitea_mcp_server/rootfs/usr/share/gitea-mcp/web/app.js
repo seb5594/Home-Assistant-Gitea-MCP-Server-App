@@ -31,6 +31,7 @@ const TEXT = {
     connection: 'Connection',
     noGiteaDetail: 'Enter the address of your Gitea in the app configuration.',
     giteaOk: 'Gitea {0} is reachable',
+    giteaOkNoVersion: 'Gitea is reachable',
     giteaDefault: '{0} (the Gitea app by alexbelgium, the default)',
     giteaUrl: '{0} (address from the app configuration)',
     giteaBad: 'Gitea does not answer',
@@ -201,6 +202,7 @@ const TEXT = {
     connection: 'Verbindung',
     noGiteaDetail: 'Trage die Adresse deines Gitea in der App-Konfiguration ein.',
     giteaOk: 'Gitea {0} ist erreichbar',
+    giteaOkNoVersion: 'Gitea ist erreichbar',
     giteaDefault: '{0} (die Gitea-App von alexbelgium, der Standard)',
     giteaUrl: '{0} (Adresse aus der App-Konfiguration)',
     giteaBad: 'Gitea antwortet nicht',
@@ -455,7 +457,7 @@ function connectionRows(status) {
 
   const source = status.local.source === 'default' ? 'giteaDefault' : 'giteaUrl';
   rows.push(gitea.reachable
-    ? row('ok', t('giteaOk', gitea.version || ''), t(source, status.local.url))
+    ? row('ok', gitea.version ? t('giteaOk', gitea.version) : t('giteaOkNoVersion'), t(source, status.local.url))
     : row('bad', t('giteaBad'), `${status.local.url}: ${explain(gitea)}`));
 
   if (gitea.token.state === 'ok') rows.push(row('ok', t('tokenOk', gitea.token.login), t('tokenOkDetail')));

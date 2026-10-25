@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-dev11
+
+* The app page no longer shows an empty version when Gitea hides it from visitors without a token.
+
 ## 1.0.0-dev10
 
 * **Less access.** The app no longer asks for the Supervisor API or the `ssl` folder. It cannot see
