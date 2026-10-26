@@ -82,7 +82,7 @@ wait_for http://127.0.0.1:3000/api/v1/version
 
 export RUNTIME_DIR="$fixture/run" OPTIONS_FILE="$fixture/options.json" VERSION_FILE="$fixture/version"
 mkdir -p "$RUNTIME_DIR"
-echo 1.0.0-dev99 >"$VERSION_FILE"
+echo 1.0.0-alpha.99 >"$VERSION_FILE"
 
 # options <json>: the app options as the Supervisor would store them (the default Gitea address
 # is replaced by the mock).
@@ -140,7 +140,7 @@ options '{"gitea_url": ""}'
   expect_equal 'default address' 'http://db21ed7f-gitea:3000' "$GM_LOCAL_URL"
   expect_equal 'default source' 'default' "$GM_LOCAL_SOURCE"
   expect_equal 'host name' "$(hostname)" "$GM_APP_HOSTNAME"
-  expect_equal 'version of the image' '1.0.0-dev99' "$GM_APP_VERSION"
+  expect_equal 'version of the image' '1.0.0-alpha.99' "$GM_APP_VERSION"
   expect_equal 'problems' 0 "${#GM_PROBLEMS[@]}"
 )
 pass 'without an address the Gitea app of alexbelgium is used'
