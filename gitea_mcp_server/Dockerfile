@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/base:3.24-2026.10.1
+ARG BUILD_FROM=ghcr.io/home-assistant/base:3.24-2026.10.3
 
 # The official image is distroless: it holds nothing but the static Go binary. That binary is
 # copied into the Home Assistant base image, which brings bashio and s6-overlay.
