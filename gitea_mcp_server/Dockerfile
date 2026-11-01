@@ -1,9 +1,9 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/base:3.24-2026.10.1
+ARG BUILD_FROM=ghcr.io/home-assistant/base:3.24-2026.10.3
 
 # The official image is distroless: it holds nothing but the static Go binary. That binary is
 # copied into the Home Assistant base image, which brings bashio and s6-overlay.
 # renovate: datasource=docker depName=docker.io/gitea/gitea-mcp-server
-ARG GITEA_MCP_VERSION=1.11.0
+ARG GITEA_MCP_VERSION=1.12.0
 FROM docker.io/gitea/gitea-mcp-server:${GITEA_MCP_VERSION} AS gitea-mcp
 
 FROM ${BUILD_FROM}
@@ -33,7 +33,7 @@ RUN chmod a+x /usr/lib/gitea-mcp/*.sh /usr/share/gitea-mcp/web/cgi-bin/* \
     && mkdir -p /run/gitea-mcp \
     && ln -s /run/gitea-mcp/status.json /usr/share/gitea-mcp/web/status.json
 
-ARG BUILD_VERSION=1.0.0-alpha.10
+ARG BUILD_VERSION=1.0.0-alpha.11
 ARG BUILD_ARCH=amd64
 RUN echo "${BUILD_VERSION}" >/etc/gitea-mcp/version
 LABEL io.hass.version="${BUILD_VERSION}" \
