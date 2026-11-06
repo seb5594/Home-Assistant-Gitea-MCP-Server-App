@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-alpha.12
+
+* 📦 Update gitea/gitea-mcp-server to 1.13.0 (was 1.12.0).
+
 ## 1.0.0-alpha.11
 
 * Update the base image and packaged dependencies to available release versions; restore reproducible CI builds.
