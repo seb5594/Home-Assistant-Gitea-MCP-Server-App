@@ -33,9 +33,6 @@ def update():
     if not changelog_text.startswith(f"# Changelog\n\n## {current}\n"):
         raise ValueError(f"The changelog must start with version {current}")
 
-    if os.environ.get("CHECK_ONLY") == "true":
-        return
-
     with urlopen(UPSTREAM, timeout=30) as response:
         release = json.load(response)
     latest = release["tag_name"].removeprefix("v")

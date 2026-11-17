@@ -76,17 +76,6 @@
         "repology"
       ],
       "versioning": "loose"
-    },
-    {
-      "description": "The upstream workflow updates Gitea MCP and the app version together",
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "docker.io/gitea/gitea-mcp-server",
-        "gitea/gitea-mcp-server"
-      ],
-      "enabled": false
     }
   ],
   "customManagers": [

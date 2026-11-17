@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>seb5594/Home-Assistant-Gitea-MCP-Server-App//.github/renovate"
+  ],
+  "packageRules": [
+    {
+      "description": "The upstream workflow updates Gitea MCP and the app version together",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "docker.io/gitea/gitea-mcp-server",
+        "gitea/gitea-mcp-server"
+      ],
+      "enabled": false
+    }
+  ]
+}

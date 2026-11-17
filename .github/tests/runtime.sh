@@ -80,6 +80,9 @@ serve "$fixture/gitea-gated" 3002 "$fixture/gated.conf"
 serve "$fixture/gitea-moved" 3003
 wait_for http://127.0.0.1:3000/api/v1/version
 
+# Check the built image version before replacing its version file with a test fixture.
+expect_equal 'app version matches Gitea MCP' "$(gitea-mcp --version)" "$(cat /etc/gitea-mcp/version)"
+
 export RUNTIME_DIR="$fixture/run" OPTIONS_FILE="$fixture/options.json" VERSION_FILE="$fixture/version"
 mkdir -p "$RUNTIME_DIR"
 echo 1.13.0 >"$VERSION_FILE"
