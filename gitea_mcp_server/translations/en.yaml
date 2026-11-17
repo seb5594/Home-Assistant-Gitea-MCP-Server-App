@@ -12,8 +12,8 @@ configuration:
     name: Toolsets
     description: Which groups of tools to offer. Leave empty for all of them. A short list keeps the tool list small, which helps voice assistants and saves tokens.
   remote_access:
-    name: Remote access for AI services
-    description: Optional. Online assistants such as claude.ai, ChatGPT and Claude Code connect over the internet and sign in to Gitea with OAuth; the app page walks you through it. Leave empty to keep the app local.
+    name: Remote access
+    description: Optional. Remote MCP clients connect over HTTPS and sign in to Gitea with OAuth. The app page walks you through setup. Leave empty to keep the app local.
     fields:
       public_url:
         name: Public MCP address

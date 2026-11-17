@@ -9,7 +9,7 @@
 
 # http_get <url> <insecure> [token]
 # Sets HTTP_CODE (000 when nothing answered), HTTP_BODY, HTTP_HEADERS and CURL_RC. HTTP_METHOD
-# (default GET) picks the method, HTTP_USER_AGENT the way the request introduces itself. The
+# (default GET) picks the method. The
 # token travels on stdin so that it never appears in the process list.
 http_get() {
   local url="$1" insecure="$2" token="${3:-}"
@@ -19,9 +19,6 @@ http_get() {
   args+=(-o "$body_file" -D "$header_file" -w '%{http_code}')
   if [[ "$insecure" == "true" ]]; then
     args+=(-k)
-  fi
-  if [[ -n "${HTTP_USER_AGENT:-}" ]]; then
-    args+=(-A "$HTTP_USER_AGENT")
   fi
   # A failing curl must not end the script (bashio runs services with errexit): keep its exit code.
   CURL_RC=0
@@ -93,7 +90,7 @@ describe_block() {
   if [[ "$(blocker)" == "cloudflare" ]]; then
     who="Cloudflare"
   fi
-  printf '%s refuses the request (HTTP %s). Claude and ChatGPT would be refused the same way: check bot and AI-crawler protection, firewall rules and access policies for this host.' "$who" "$HTTP_CODE"
+  printf '%s refuses the request (HTTP %s). Check firewall rules and access policies for this host.' "$who" "$HTTP_CODE"
 }
 
 # no_answer_error <name>
@@ -160,88 +157,31 @@ probe_gitea() {
              code: ($token_msg.code // ""), args: ($token_msg.args // {})}}'
 }
 
-# The AI services that call the public MCP address, as id|name|User-Agent. Bot protection in front
-# of the app decides by the User-Agent, so each one is tried with the name it is known by. The
-# names are the ones the services document or that were seen in logs; a service may change them.
-AGENTS=(
-  "claude|Claude (claude.ai)|Claude-User"
-  "claude_signin|Claude (sign-in step)|python-httpx/0.28.1"
-  "chatgpt|ChatGPT|ChatGPT-User"
-  "claude_code|Claude Code|claude-code/2.1.0 (cli)"
-)
-
-# challenge_reached
-# True when the last answer is the sign-in challenge of the MCP server (401 with a bearer
-# challenge). That proves the request got through to the app.
-challenge_reached() {
-  [[ "$HTTP_CODE" == "401" ]] && grep -qi '^www-authenticate: *bearer' <<<"$HTTP_HEADERS"
-}
-
-# probe_agent <id> <name> <user-agent> <mcp-public-url> <insecure>
-# One agent: {"id", "name", "ok", "code", "args"}
-probe_agent() {
-  local id="$1" name="$2" agent="$3" mcp_url="$4" insecure="$5"
-  local ok=false how="" agent_error="" agent_msg='{}'
-
-  HTTP_METHOD=POST HTTP_USER_AGENT="$agent" http_get "${mcp_url}/mcp" "$insecure"
-  if challenge_reached; then
-    ok=true
-  else
-    if [[ "$HTTP_CODE" == "000" ]]; then
-      how="cut_off"
-    else
-      how="refused"
-    fi
-    set_error agent agent_blocked "A request that only claims to be ${name} (User-Agent ${agent}) is $([[ "$how" == cut_off ]] && printf 'cut off (%s)' "$(describe_failure)" || printf 'refused with HTTP %s' "$HTTP_CODE"), while an ordinary request reaches the app. That is usually bot protection, for example Cloudflare: it lets the real service in by its address and turns look-alikes away. If ${name} connects, ignore this." \
-      name "$name" agent "$agent" how "$how" http "$HTTP_CODE" reason "$(failure_reason)" rc "$CURL_RC"
-  fi
-  jq -nc --arg id "$id" --arg name "$name" --argjson ok "$ok" --arg error "$agent_error" --argjson msg "$agent_msg" '
-    {id: $id, name: $name, ok: $ok, error: $error, code: ($msg.code // ""), args: ($msg.args // {})}'
-}
-
-# probe_agent_access <mcp-public-url> <insecure>
-# Claude signs in with one HTTP client and then calls the MCP address with another that
-# introduces itself as "Claude-User"; ChatGPT and Claude Code have names of their own. Bot
-# protection in front of the app often refuses or cuts off exactly one of them after the sign-in
-# worked. Each is tried here with its name. An ordinary request first shows that the app can be
-# reached at all; without it a blocked agent could not be told from an address that is down.
-# The test comes from your own network, so it is a hint and not proof: bot protection often lets
-# the real services in by their address (ChatGPT passes although a request from here with its
-# name is refused) and turns away requests that only claim to be them.
-# {"ok", "error", "code", "args", "agents": [{"id", "name", "ok", "error", "code", "args"}]}
-probe_agent_access() {
+# probe_mcp_challenge <mcp-public-url> <insecure>
+# The remote MCP endpoint should ask unauthenticated requests for a Bearer token.
+probe_mcp_challenge() {
   local mcp_url="$1" insecure="$2"
-  local ok=false control_error="" control_msg='{}' entry id name agent results=() blocked=0
+  local ok=false challenge_error="" challenge_msg='{}'
 
-  HTTP_METHOD=POST HTTP_USER_AGENT="" http_get "${mcp_url}/mcp" "$insecure"
-  if challenge_reached; then
-    for entry in "${AGENTS[@]}"; do
-      IFS='|' read -r id name agent <<<"$entry"
-      results+=("$(probe_agent "$id" "$name" "$agent" "$mcp_url" "$insecure")")
-    done
-    blocked="$(printf '%s\n' "${results[@]}" | jq -s '[.[] | select(.ok | not)] | length')"
-    if ((blocked == 0)); then
-      ok=true
-    else
-      set_error control agents_blocked "${blocked} test request(s) that only claim to be an AI service are refused or cut off, while an ordinary request reaches the app. The real services may still get through; the security log of your firewall shows what their requests got." count "$blocked"
-    fi
+  HTTP_METHOD=POST http_get "${mcp_url}/mcp" "$insecure"
+  if [[ "$HTTP_CODE" == "401" ]] && grep -qi '^www-authenticate: *bearer' <<<"$HTTP_HEADERS"; then
+    ok=true
   elif [[ "$HTTP_CODE" == "000" ]]; then
-    no_answer_error control
+    no_answer_error challenge
   elif is_blocked; then
-    blocked_error control
+    blocked_error challenge
   else
-    set_error control agent_http "The MCP address does not answer with the sign-in challenge of this app (HTTP ${HTTP_CODE})." http "$HTTP_CODE"
+    set_error challenge challenge_http "The MCP address does not answer with a Bearer challenge (HTTP ${HTTP_CODE})." http "$HTTP_CODE"
   fi
 
-  jq -nc --argjson ok "$ok" --arg error "$control_error" --argjson msg "$control_msg" \
-    --argjson agents "$(printf '%s\n' "${results[@]}" | jq -sc '. // []')" '
-    {ok: $ok, error: $error, code: ($msg.code // ""), args: ($msg.args // {}), agents: $agents}'
+  jq -nc --argjson ok "$ok" --arg error "$challenge_error" --argjson msg "$challenge_msg" '
+    {ok: $ok, error: $error, code: ($msg.code // ""), args: ($msg.args // {})}'
 }
 
 # probe_remote <mcp-public-url> <gitea-public-url> <insecure>
-# Looks at the public addresses the way Claude and ChatGPT will; every check is
+# Checks the public addresses; every check is
 # {"ok", "error", "code", "args"}, the Gitea check also has "note" and "note_code":
-# {"mcp", "agent", "gitea", "oauth"}
+# {"mcp", "challenge", "gitea", "oauth"}
 probe_remote() {
   local mcp_url="$1" gitea_url="$2" insecure="$3"
   local mcp_ok=false mcp_error="" mcp_msg='{}'
@@ -264,7 +204,7 @@ probe_remote() {
     gitea_ok=true
   elif [[ "$HTTP_CODE" == "401" || "$HTTP_CODE" == "403" ]] && is_json "$HTTP_BODY"; then
     gitea_ok=true
-    gitea_note="Gitea asks for a sign-in before it shows anything. That is fine for the sign-in of Claude and ChatGPT."
+    gitea_note="Gitea asks for a sign-in before it shows anything. OAuth sign-in is available."
     gitea_note_code="login_required_note"
   elif [[ "$HTTP_CODE" == "000" ]]; then
     no_answer_error gitea
@@ -274,13 +214,13 @@ probe_remote() {
     set_error gitea http_status "The public Gitea address answers with HTTP ${HTTP_CODE}." http "$HTTP_CODE"
   fi
 
-  # Claude and ChatGPT read the sign-in addresses from Gitea and call them from the internet.
+  # Remote clients use the public sign-in addresses announced by Gitea.
   http_get "${gitea_url}/.well-known/openid-configuration" "$insecure"
   if [[ "$HTTP_CODE" == "200" ]] && is_json "$HTTP_BODY"; then
     authorize_endpoint="$(jq -r '.authorization_endpoint // ""' <<<"$HTTP_BODY")"
     token_endpoint="$(jq -r '.token_endpoint // ""' <<<"$HTTP_BODY")"
     if [[ "$authorize_endpoint" != "${gitea_url}/"* || "$token_endpoint" != "${gitea_url}/"* ]]; then
-      set_error oauth root_url "Gitea announces its sign-in at ${token_endpoint:-nowhere}. Set ROOT_URL in Gitea to ${gitea_url}/ so that Claude and ChatGPT are sent to the public address." endpoint "${token_endpoint:-nowhere}" public "$gitea_url"
+      set_error oauth root_url "Gitea announces its sign-in at ${token_endpoint:-nowhere}. Set ROOT_URL in Gitea to ${gitea_url}/ so that clients are sent to the public address." endpoint "${token_endpoint:-nowhere}" public "$gitea_url"
     else
       HTTP_METHOD=POST http_get "$token_endpoint" "$insecure"
       if [[ "$HTTP_CODE" == "400" || "$HTTP_CODE" == "401" ]] && is_json "$HTTP_BODY"; then
@@ -302,13 +242,13 @@ probe_remote() {
   fi
 
   jq -nc --argjson mcp_ok "$mcp_ok" --arg mcp_error "$mcp_error" --argjson mcp_msg "$mcp_msg" \
-    --argjson agent "$(probe_agent_access "$mcp_url" "$insecure")" \
+    --argjson challenge "$(probe_mcp_challenge "$mcp_url" "$insecure")" \
     --argjson gitea_ok "$gitea_ok" --arg gitea_error "$gitea_error" --argjson gitea_msg "$gitea_msg" \
     --arg gitea_note "$gitea_note" --arg gitea_note_code "$gitea_note_code" \
     --argjson oauth_ok "$oauth_ok" --arg oauth_error "$oauth_error" --argjson oauth_msg "$oauth_msg" '
     def detail($msg): {code: ($msg.code // ""), args: ($msg.args // {})};
     {mcp: ({ok: $mcp_ok, error: $mcp_error} + detail($mcp_msg)),
-     agent: $agent,
+     challenge: $challenge,
      gitea: ({ok: $gitea_ok, error: $gitea_error, note: $gitea_note, note_code: $gitea_note_code} + detail($gitea_msg)),
      oauth: ({ok: $oauth_ok, error: $oauth_error} + detail($oauth_msg))}'
 }

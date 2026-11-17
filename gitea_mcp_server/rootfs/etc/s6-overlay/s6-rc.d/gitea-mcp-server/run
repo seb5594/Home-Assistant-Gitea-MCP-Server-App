@@ -5,7 +5,7 @@
 #
 # Two servers can run side by side:
 #   local   the configured access token; for Home Assistant and other clients on the network
-#   remote  OAuth against Gitea; for claude.ai and ChatGPT, only when remote_access is set up
+#   remote  OAuth against Gitea; starts when remote_access is configured
 
 # Bashio debug output would print Supervisor replies.
 bashio::log.level info
@@ -105,7 +105,7 @@ log_endpoints() {
     log_info "Home Assistant: add the 'Model Context Protocol' integration with the address http://${GM_APP_HOSTNAME}:${GM_LOCAL_PORT}/mcp"
   fi
   if [[ -n "$GM_REMOTE_URL" ]]; then
-    log_info "claude.ai and ChatGPT: use the connector address ${GM_REMOTE_URL}/mcp"
+    log_info "Remote MCP address: ${GM_REMOTE_URL}/mcp"
   fi
   log_info "Open the app page (Open Web UI) for step-by-step help."
 }

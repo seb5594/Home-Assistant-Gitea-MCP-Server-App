@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.0
+
+* Use the Gitea MCP version as the Home Assistant app version.
+* Publish the app as a stable release.
+* Document local MCP and remote OAuth setup with client-neutral instructions.
+
 ## 1.0.0-alpha.12
 
 * 📦 Update gitea/gitea-mcp-server to 1.13.0 (was 1.12.0).
@@ -10,7 +16,7 @@
 
 ## 1.0.0-alpha.10
 
-* New version scheme: pre-releases are called Alpha from now on (earlier ones were 1.0.0-dev1 to 1.0.0-dev14). The releases and the badge show just "Alpha 10".
+* Update release and badge version labels.
 
 ## 1.0.0-dev14
 
@@ -18,13 +24,7 @@
 
 ## 1.0.0-dev13
 
-* ChatGPT is tried with its documented name ChatGPT-User. The tests for AI services are hints now
-  and no longer count against a client: Cloudflare lets the real services in by their address, so
-  ChatGPT could be refused in the test and still connect.
-* New order of the tabs: Home Assistant, Claude Code, claude.ai, ChatGPT, other agents, remote access.
-* The tab for other agents shows the address for apps on Home Assistant OS, for other machines in
-  your network and for the internet, and describes Home Assistant's own MCP server (address, port,
-  path, sign-in).
+* Update the app page and document addresses for local and remote MCP clients.
 * The official Gitea logo with the name of the app as icon and logo. The license is MIT.
 
 ## 1.0.0-dev12
@@ -42,15 +42,8 @@
   your other apps, entities or files. The address of the Gitea app (`http://db21ed7f-gitea:3000`) is
   the default of `gitea_url` instead of being detected. The option `advanced.ca_certificate` is gone;
   use `ignore_certificate_errors` for a self-signed Gitea in your own network.
-* **New app page.** Tabs for the overview, Home Assistant (Assist), remote access, claude.ai,
-  ChatGPT, Claude Code and other agents, with step-by-step instructions and a lighter blue style.
-  No assistant is optional or privileged any more: you connect what you use.
-* The check for AI services tries Claude, the Claude sign-in step, Claude Code and two ChatGPT names
-  one by one and shows which one bot protection turns away.
-* The OAuth application is called *AI assistants (MCP)*. The ChatGPT callback address
-  (`https://chatgpt.com/connector/oauth/<value>`) is different for every connector: the old fixed
-  one is gone from the list, and the ChatGPT tab explains how to add yours.
-* Full documentation, including Assist, tool groups, security and Home Assistant's own MCP server.
+* Add a new app page with connection status, local and remote setup, and copyable addresses.
+* Expand documentation for tool groups, security and Home Assistant.
 
 ## 1.0.0-dev9
 
@@ -64,22 +57,16 @@
 * The app page is fully translated: the messages of the checks and the configuration problems
   now come as codes and are shown in German when the browser prefers German, otherwise in
   English. The log stays in English.
-* Claude Code: the redirect address `http://localhost:3118/callback` is in the list of the app
-  page, together with a ready-to-copy `claude mcp add` command with the fixed callback port.
 
 ## 1.0.0-dev7
 
 * Debug logging now also writes one line per request to the remote address: method, path,
   status, User-Agent, whether a token was sent and whether an `Origin` header came along, never
-  the token. It shows whether claude.ai or ChatGPT reach the app after the sign-in, and what the
-  app answers. A small nginx sits in front of the remote server for this, only while debug
-  logging is on.
+  the token. A small nginx sits in front of the remote server while debug logging is on.
 
 ## 1.0.0-dev6
 
-* The Claude-User check now says that it comes from your own network and only claims to be
-  Claude, so a block there is a hint and not proof; the documentation explains how to read the
-  firewall log for the real requests.
+* Clarify how to interpret remote connectivity checks.
 
 ## 1.0.0-dev5
 
@@ -91,17 +78,11 @@
 
 ## 1.0.0-dev4
 
-* The Claude-User check also recognises a connection that is cut off instead of answered (the
-  way Cloudflare drops these requests) and compares it with an ordinary request, so the message
-  says plainly that only Claude's name is blocked.
+* Report connections that are cut off before an HTTP response.
 
 ## 1.0.0-dev3
 
-* New check for remote access: the public address is called the way Claude's servers call it
-  (User-Agent `Claude-User`), because bot protection such as Cloudflare's often accepts the
-  sign-in and then refuses exactly these calls, which ends in "connection failed" in claude.ai.
-  The message names the cause and where to change it.
-* Documentation: how to test this by hand and where to look in Cloudflare.
+* Add remote connectivity checks and troubleshooting instructions.
 
 ## 1.0.0-dev2
 
@@ -110,18 +91,13 @@
   it is the one answering. Before, `REQUIRE_SIGNIN_VIEW` showed up as an error.
 * New check: Gitea's sign-in addresses are announced with the public address and answer from the
   internet. A wrong `ROOT_URL` is reported with the value to set.
-* Documentation: what to look at when claude.ai or ChatGPT report a failed connection after the
-  Gitea sign-in.
 
 ## 1.0.0-dev1
-
-First pre-release.
 
 * Runs the official Gitea MCP server (1.11.0) as a Home Assistant app, over HTTP at `/mcp`.
 * Finds the Gitea app of alexbelgium by itself; any other Gitea is set with `gitea_url`.
 * Read-only by default, with a choice of toolsets.
-* Optional remote access for claude.ai and ChatGPT: a second server signs users in to Gitea
-  with OAuth. The app page lists the redirect URIs, the connector address and the checks.
+* Optional remote access with Gitea OAuth and connection checks in the app page.
 * App page (Open Web UI) with connection checks, copy buttons and a button that adds the
   integration to Home Assistant. English and German.
 * Configuration problems no longer stop the app; they are shown in the log and on the app page.

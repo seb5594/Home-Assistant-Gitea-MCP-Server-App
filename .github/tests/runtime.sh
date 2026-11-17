@@ -60,7 +60,7 @@ echo '{"version":"1.24.0"}' >"$fixture/gitea-locked/api/v1/version"
 echo '{"login":"nobody"}' >"$fixture/gitea-locked/api/v1/user"
 printf '/api/v1/user:user:secret\n' >"$fixture/locked.conf" # answers 401 to a token header
 
-# What Gitea publishes for the sign-in of Claude and ChatGPT; the token endpoint answers in JSON.
+# What Gitea publishes for OAuth sign-in; the token endpoint answers in JSON.
 # openid_configuration <port> <host>
 openid_configuration() {
   printf '{"issuer":"http://%s/","authorization_endpoint":"http://%s/login/oauth/authorize","token_endpoint":"http://%s/cgi-bin/token"}\n' "$2" "$2" "$2" >"$fixture/$1/.well-known/openid-configuration"
@@ -82,7 +82,7 @@ wait_for http://127.0.0.1:3000/api/v1/version
 
 export RUNTIME_DIR="$fixture/run" OPTIONS_FILE="$fixture/options.json" VERSION_FILE="$fixture/version"
 mkdir -p "$RUNTIME_DIR"
-echo 1.0.0-alpha.99 >"$VERSION_FILE"
+echo 1.13.0 >"$VERSION_FILE"
 
 # options <json>: the app options as the Supervisor would store them (the default Gitea address
 # is replaced by the mock).
@@ -140,7 +140,7 @@ options '{"gitea_url": ""}'
   expect_equal 'default address' 'http://db21ed7f-gitea:3000' "$GM_LOCAL_URL"
   expect_equal 'default source' 'default' "$GM_LOCAL_SOURCE"
   expect_equal 'host name' "$(hostname)" "$GM_APP_HOSTNAME"
-  expect_equal 'version of the image' '1.0.0-alpha.99' "$GM_APP_VERSION"
+  expect_equal 'version of the image' '1.13.0' "$GM_APP_VERSION"
   expect_equal 'problems' 0 "${#GM_PROBLEMS[@]}"
 )
 pass 'without an address the Gitea app of alexbelgium is used'
@@ -252,8 +252,7 @@ expect_equal 'unauthenticated MCP request' 401 "$status"
   expect_equal 'public MCP check' true "$(jq -r .mcp.ok <<<"$result")"
   expect_equal 'public Gitea check' true "$(jq -r .gitea.ok <<<"$result")"
   expect_equal 'Gitea sign-in check' true "$(jq -r .oauth.ok <<<"$result")"
-  expect_equal 'requests as AI agents' true "$(jq -r .agent.ok <<<"$result")"
-  expect_equal 'every agent was tried' 4 "$(jq -r '.agent.agents | length' <<<"$result")"
+  expect_equal 'MCP Bearer challenge' true "$(jq -r .challenge.ok <<<"$result")"
   result="$(probe_remote http://127.0.0.1:18183 http://127.0.0.1:3000 false)"
   expect_equal 'wrong target' false "$(jq -r .mcp.ok <<<"$result")"
 )
@@ -283,37 +282,8 @@ pass 'checks tell a gate or firewall in front of Gitea from the sign-in requirem
 
 (
   settings
-  # Bot protection that stops only requests introducing themselves as one AI service, as
-  # Cloudflare does: first with a web page (403), then by cutting the connection off (curl error 92).
-  # The library reads these variables and calls this function; shellcheck cannot see that.
-  # shellcheck disable=SC2034,SC2317,SC2329
-  http_get() {
-    CURL_RC=0 HTTP_CODE=401 HTTP_BODY='authorization required' HTTP_HEADERS=$'HTTP/2 401\r\nwww-authenticate: Bearer resource_metadata="x"'
-    if [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User" && "$BLOCK_MODE" == "page" ]]; then
-      CURL_RC=0 HTTP_CODE=403 HTTP_BODY='<html>Attention Required</html>' HTTP_HEADERS=$'HTTP/2 403\r\nserver: cloudflare'
-    elif [[ "${HTTP_USER_AGENT:-}" == "ChatGPT-User" && "$BLOCK_MODE" == "reset" ]]; then
-      CURL_RC=92 HTTP_CODE=000 HTTP_BODY="" HTTP_HEADERS=""
-    fi
-  }
-  for BLOCK_MODE in page reset; do
-    result="$(BLOCK_MODE=$BLOCK_MODE probe_agent_access https://mcp.example.com false)"
-    expect_equal "one agent refused ($BLOCK_MODE)" false "$(jq -r .ok <<<"$result")"
-    expect_equal "summary code ($BLOCK_MODE)" agents_blocked "$(jq -r .code <<<"$result")"
-    expect_equal "only ChatGPT is named ($BLOCK_MODE)" chatgpt "$(jq -r '[.agents[] | select(.ok | not) | .id] | join(",")' <<<"$result")"
-    expect_equal "Claude passes ($BLOCK_MODE)" true "$(jq -r '.agents[] | select(.id == "claude") | .ok' <<<"$result")"
-    [[ "$(jq -r '.agents[] | select(.id == "chatgpt") | .error' <<<"$result")" == *'only claims to be ChatGPT'* ]] \
-      || fail "the refusal is not explained ($BLOCK_MODE)"
-  done
-  expect_equal 'how the page refused' refused "$(BLOCK_MODE=page probe_agent_access https://mcp.example.com false | jq -r '.agents[] | select(.id == "chatgpt") | .args.how')"
-  expect_equal 'how the reset cut off' cut_off "$(BLOCK_MODE=reset probe_agent_access https://mcp.example.com false | jq -r '.agents[] | select(.id == "chatgpt") | .args.how')"
-  result="$(BLOCK_MODE=none probe_agent_access https://mcp.example.com false)"
-  expect_equal 'nothing in the way' true "$(jq -r .ok <<<"$result")"
-)
-
-(
-  settings
   # A real failing connection: curl ends with an error code and the probes must still answer in JSON.
-  result="$(probe_agent_access http://127.0.0.1:9 false)"
+  result="$(probe_mcp_challenge http://127.0.0.1:9 false)"
   expect_equal 'no answer at all' false "$(jq -r .ok <<<"$result")"
   [[ "$(jq -r .error <<<"$result")" == *'does not answer'* ]] || fail 'a closed port is not reported'
   result="$(probe_remote http://127.0.0.1:9 http://127.0.0.1:9 false)"
@@ -332,7 +302,6 @@ pass 'probes keep answering in JSON when a connection fails'
   expect_equal 'argument of a wrong ROOT_URL' http://127.0.0.1:3003 "$(jq -r .oauth.args.public <<<"$result")"
 )
 pass 'problems carry a code and arguments for the translated page'
-pass 'a block of one AI service is named, whether refused or cut off'
 
 # ---- request log of the remote address (debug mode) ----------------------------------------
 
@@ -342,7 +311,7 @@ start_server 8082 -b=127.0.0.1
 nginx -e stderr -c "$NGINX_CONF" 2>>"$fixture/nginx.log" &
 pids+=($!)
 wait_for http://127.0.0.1:8081/healthz
-status="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8081/mcp -A Claude-User \
+status="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8081/mcp -A MCP-Test-Client \
   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
   -H 'Authorization: Bearer s3cr3t-request-log' \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}')"
@@ -351,7 +320,7 @@ for _ in $(seq 1 20); do
   grep -q 'POST /mcp' "$fixture/nginx.log" && break
   sleep 0.1
 done
-grep -q 'request: POST /mcp -> 200 .* agent="Claude-User" auth=token-sent' "$fixture/nginx.log" || fail "the request is not logged: $(cat "$fixture/nginx.log")"
+grep -q 'request: POST /mcp -> 200 .* agent="MCP-Test-Client" auth=token-sent' "$fixture/nginx.log" || fail "the request is not logged: $(cat "$fixture/nginx.log")"
 if grep -q 's3cr3t-request-log' "$fixture/nginx.log"; then fail 'the token leaked into the request log'; fi
 pass 'the request log shows method, status, agent and whether a token was sent, never the token'
 
@@ -360,10 +329,9 @@ pass 'the request log shows method, status, agent and whether a token was sent, 
 options '{"access_token": "s3cr3t-token", "toolsets": ["issue"]}'
 (
   settings
-  grep -q 'http://localhost:3118/callback' <<<"$(jq -r '.remote.redirect_uris[]' "$RUNTIME_DIR/resolved.json")" || fail 'the Claude Code callback is not in the redirect URIs'
-  expect_equal 'Claude Code port' 3118 "$(jq -r .claude_code_port "$RUNTIME_DIR/resolved.json")"
+  expect_equal 'OAuth application name' 'Gitea MCP' "$(jq -r .remote.app_name "$RUNTIME_DIR/resolved.json")"
 )
-pass 'the redirect URIs include the Claude Code callback'
+pass 'the status gives a name for the OAuth application'
 (
   settings
   refresh_status >/dev/null

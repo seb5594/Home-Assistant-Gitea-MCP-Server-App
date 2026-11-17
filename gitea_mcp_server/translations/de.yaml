@@ -12,8 +12,8 @@ configuration:
     name: Werkzeuggruppen
     description: Welche Gruppen von Werkzeugen angeboten werden. Leer lassen für alle. Eine kurze Auswahl hält die Werkzeugliste klein, das hilft Sprachassistenten und spart Token.
   remote_access:
-    name: Fernzugriff für KI-Dienste
-    description: Optional. Online-Assistenten wie claude.ai, ChatGPT und Claude Code verbinden sich über das Internet und melden sich per OAuth bei Gitea an; die App-Seite führt dich Schritt für Schritt durch die Einrichtung. Leer lassen, damit die App lokal bleibt.
+    name: Fernzugriff
+    description: Optional. Externe MCP-Clients verbinden sich per HTTPS und melden sich per OAuth bei Gitea an. Die App-Seite führt dich durch die Einrichtung. Leer lassen, damit die App lokal bleibt.
     fields:
       public_url:
         name: Öffentliche MCP-Adresse

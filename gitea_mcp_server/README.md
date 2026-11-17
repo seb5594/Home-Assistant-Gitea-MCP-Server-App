@@ -1,14 +1,10 @@
 # Gitea MCP-Server
 
-Lets Assist, Claude, ChatGPT and other AI agents work with your own Gitea: search repositories,
-read files, and look at or write issues and pull requests.
+Connect MCP clients to your Gitea repositories, files, issues and pull requests through Home Assistant.
 
-* Minimal permissions: no access to the Supervisor, your files or Docker. The address of the Gitea
-  app is filled in, you add an access token.
-* Read-only by default, with a choice of tool groups.
-* Optional remote access for claude.ai, ChatGPT, Claude Code and others, with a guided setup for
-  each of them on the app page.
+* Runs the official [Gitea MCP server](https://gitea.com/gitea/gitea-mcp).
+* Read-only by default, with configurable tool groups.
+* Optional remote access with Gitea OAuth.
+* English and German setup instructions in the app web interface.
 
-> **Pre-release.** This is a `dev` version. Please report what you see.
-
-Open the *Documentation* tab for setup, Assist, remote access and troubleshooting.
+See the [documentation](DOCS.md) for configuration and troubleshooting.

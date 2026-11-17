@@ -15,19 +15,7 @@ GM_REMOTE_UPSTREAM_PORT=8082
 # The Gitea app by alexbelgium, as the other apps of Home Assistant reach it.
 DEFAULT_GITEA_URL="http://db21ed7f-gitea:3000"
 
-# The name of the OAuth application the user creates in Gitea: one for every AI service.
-OAUTH_APP_NAME="AI assistants (MCP)"
-# Claude Code opens a local web server for the sign-in. Gitea ignores the port only for
-# 127.0.0.1, not for localhost, so the port is fixed here and set with --callback-port.
-CLAUDE_CODE_PORT=3118
-# Where claude.ai and Claude Code send the user back after signing in to Gitea. ChatGPT shows a
-# callback of its own (https://chatgpt.com/connector/oauth/<id>) for every connector; the user
-# adds that one by hand.
-REMOTE_REDIRECT_URIS=(
-  "https://claude.ai/api/mcp/auth_callback"
-  "https://claude.com/api/mcp/auth_callback"
-  "http://localhost:${CLAUDE_CODE_PORT}/callback"
-)
+OAUTH_APP_NAME="Gitea MCP"
 
 GM_PROBLEMS=()
 GM_PROBLEM_DETAILS=()
@@ -62,7 +50,7 @@ resolve_local_gitea() {
   fi
 }
 
-# The public addresses the AI services use. Optional: without public_url the remote endpoint stays off.
+# The public addresses remote MCP clients use. Optional: without public_url the remote endpoint stays off.
 resolve_remote_access() {
   local public gitea_public
   GM_REMOTE_URL=""
@@ -88,7 +76,7 @@ resolve_remote_access() {
     return 0
   fi
   if [[ "$gitea_public" != https://* ]]; then
-    log_warning "The AI services only sign in to Gitea over HTTPS; '${gitea_public}' will not work for them."
+    log_warning "Use an HTTPS address for remote Gitea sign-in: '${gitea_public}'."
   fi
 
   GM_REMOTE_URL="$public"
@@ -96,8 +84,6 @@ resolve_remote_access() {
 }
 
 write_resolved() {
-  local redirects
-  redirects="$(printf '%s\n' "${REMOTE_REDIRECT_URIS[@]}" | jq -R . | jq -sc .)"
   mkdir -p "$RUNTIME_DIR"
   jq -n \
     --arg hostname "$GM_APP_HOSTNAME" --arg version "$GM_APP_VERSION" \
@@ -105,8 +91,8 @@ write_resolved() {
     --arg local_url "$GM_LOCAL_URL" --arg local_source "$GM_LOCAL_SOURCE" \
     --argjson local_insecure "$GM_IGNORE_TLS" --argjson local_port "$GM_LOCAL_PORT" \
     --arg remote_url "$GM_REMOTE_URL" --arg remote_gitea_url "$GM_REMOTE_GITEA_URL" \
-    --argjson remote_port "$GM_REMOTE_PORT" --argjson redirect_uris "$redirects" \
-    --arg oauth_app_name "$OAUTH_APP_NAME" --argjson claude_code_port "$CLAUDE_CODE_PORT" \
+    --argjson remote_port "$GM_REMOTE_PORT" \
+    --arg oauth_app_name "$OAUTH_APP_NAME" \
     --argjson debug "$GM_DEBUG" \
     --argjson problems "$(printf '%s\n' "${GM_PROBLEMS[@]}" | jq -R . | jq -sc 'map(select(. != ""))')" \
     --argjson problem_details "$(printf '%s\n' "${GM_PROBLEM_DETAILS[@]}" | jq -sc 'map(select(. != null))')" '
@@ -122,9 +108,8 @@ write_resolved() {
       remote: {
         public_url: $remote_url, gitea_url: $remote_gitea_url, insecure: $local_insecure, port: $remote_port,
         mcp_url: (if $remote_url == "" then "" else "\($remote_url)/mcp" end),
-        app_name: $oauth_app_name, redirect_uris: $redirect_uris
+        app_name: $oauth_app_name
       },
-      claude_code_port: $claude_code_port,
       problems: $problems,
       problem_details: $problem_details
     }

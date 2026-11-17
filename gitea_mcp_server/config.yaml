@@ -1,8 +1,8 @@
 name: Gitea MCP-Server
-description: Lets Assist, Claude, ChatGPT and other AI agents work with your Gitea repositories, issues and pull requests through the Model Context Protocol.
-version: "1.0.0-alpha.12"
+description: Connects MCP clients to your Gitea repositories, issues and pull requests.
+version: "1.13.0"
 slug: gitea_mcp_server
-stage: experimental
+stage: stable
 init: false
 arch:
   - amd64
@@ -17,7 +17,7 @@ ports:
   8081/tcp: null
 ports_description:
   8080/tcp: Local MCP endpoint with the configured access token. Leave closed unless a client outside Home Assistant needs it.
-  8081/tcp: Remote MCP endpoint for AI services such as claude.ai and ChatGPT (OAuth). Normally reached through a tunnel or reverse proxy instead.
+  8081/tcp: Remote MCP endpoint with Gitea OAuth. Normally reached through a tunnel or reverse proxy instead.
 options:
   gitea_url: "http://db21ed7f-gitea:3000"
   access_token: ""
