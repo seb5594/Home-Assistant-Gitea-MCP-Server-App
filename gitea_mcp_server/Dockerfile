@@ -14,7 +14,7 @@ RUN apk add --no-cache \
     # renovate: datasource=repology depName=alpine_3_24/busybox-extras
     busybox-extras=1.37.0-r31 \
     # renovate: datasource=repology depName=alpine_3_24/nginx
-    nginx=1.30.6-r0 \
+    nginx=1.30.7-r0 \
     # renovate: datasource=repology depName=alpine_3_24/curl
     curl=8.23.0-r0 \
     # renovate: datasource=repology depName=alpine_3_24/jq
