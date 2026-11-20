@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/seb5594/home-assistant-base:3.24-2026.11.0@sha256:d116b9e5b612e6fcd997c86642d21b61953fcbe390c39c9b03443a577ed5e2a6
+ARG BUILD_FROM=ghcr.io/seb5594/home-assistant-base:3.24-2026.11.0
 
 # The official image is distroless: it holds nothing but the static Go binary. That binary is
 # copied into the Home Assistant base image, which brings bashio and s6-overlay.
@@ -11,14 +11,10 @@ FROM ${BUILD_FROM}
 # Alpine's busybox is built without the httpd applet; busybox-extras brings it (app page).
 # nginx only runs in debug mode, as the request log of the remote address.
 RUN apk add --no-cache \
-    # renovate: datasource=repology depName=alpine_3_24/busybox-extras
-    busybox-extras=1.37.0-r31 \
-    # renovate: datasource=repology depName=alpine_3_24/nginx
-    nginx=1.30.7-r0 \
-    # renovate: datasource=repology depName=alpine_3_24/curl
-    curl=8.23.0-r0 \
-    # renovate: datasource=repology depName=alpine_3_24/jq
-    jq=1.8.2-r0
+    busybox-extras \
+    nginx \
+    curl \
+    jq
 
 COPY --from=gitea-mcp /app/gitea-mcp /usr/local/bin/gitea-mcp
 RUN gitea-mcp --version
@@ -34,11 +30,11 @@ RUN chmod a+x /usr/lib/gitea-mcp/*.sh /usr/share/gitea-mcp/web/cgi-bin/* \
     && ln -s /run/gitea-mcp/status.json /usr/share/gitea-mcp/web/status.json
 
 ARG BUILD_VERSION=1.13.0
-ARG BUILD_ARCH=amd64
 RUN echo "${BUILD_VERSION}" >/etc/gitea-mcp/version
 LABEL io.hass.version="${BUILD_VERSION}" \
     io.hass.type="addon" \
-    io.hass.arch="${BUILD_ARCH}" \
+    org.opencontainers.image.title="Home Assistant App: Gitea MCP-Server" \
+    org.opencontainers.image.version="${BUILD_VERSION}" \
     org.opencontainers.image.source="https://github.com/seb5594/Home-Assistant-Gitea-MCP-Server-App"
 
 HEALTHCHECK --interval=5m --timeout=10s --start-period=1m --retries=3 \
